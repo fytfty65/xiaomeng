@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  debug 专用：允许任意明文 HTTP，方便在真机/局域网/生产 IP 之间切换调试地址。
+  仅覆盖 debug 变体；release 仍使用 main 下的严格白名单配置。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

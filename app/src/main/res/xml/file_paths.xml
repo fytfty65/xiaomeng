@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 只暴露 cache/receipts 给系统相机写临时照片，避免把整个私有目录授权出去。 -->
+<paths>
+    <cache-path name="receipts" path="receipts/" />
+</paths>
