@@ -18,6 +18,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +28,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -38,6 +41,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -45,7 +50,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -86,7 +90,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -805,16 +808,39 @@ private fun SeasonAmbience(season: HeroSeason) {
 
 /** 顶部四季封面：品牌行压在图上，宋体标题与四季胶囊落在底部。 */
 @Composable
-internal fun AuthHero(
-    eyebrow: String,
-    title: String,
-    height: Dp = 320.dp,
-    initialSeason: HeroSeason = HeroSeason.ofCurrentMonth(),
-    // 当前展示的季节变化时上报，应用据此切换全局季节配色。
-    onSeasonChanged: (HeroSeason) -> Unit = {},
+internal fun AuthEntryLayout(
+    season: JourneySeason,
+    onSeasonChange: (JourneySeason) -> Unit,
+    alternateAction: String,
+    onAlternateAction: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize().background(authWebColors().page).imePadding(),
+    ) {
+        val showSeasonPicker = maxHeight >= 420.dp
+        val heroHeight = (maxHeight * 0.31f).coerceIn(100.dp, 228.dp)
+        Column(Modifier.fillMaxSize()) {
+            AuthHero(
+                height = heroHeight,
+                showSeasonPicker = showSeasonPicker,
+                initialSeason = season.heroSeason(),
+                onSeasonChanged = { onSeasonChange(JourneySeason.fromKey(it.key)) },
+                topBar = { AuthHeroBrand(alternateAction, onAlternateAction) },
+            )
+            AuthPaperCard(modifier = Modifier.weight(1f), content = content)
+        }
+    }
+}
+
+@Composable
+private fun AuthHero(
+    height: Dp,
+    showSeasonPicker: Boolean,
+    initialSeason: HeroSeason,
+    onSeasonChanged: (HeroSeason) -> Unit,
     topBar: @Composable () -> Unit,
 ) {
-    val colors = authWebColors()
     var seasonIndex by rememberSaveable { mutableIntStateOf(initialSeason.ordinal) }
     // 用户手动点过胶囊就不再自动换季，避免「刚选完又自己跳走」。
     var autoPlay by rememberSaveable { mutableStateOf(true) }
@@ -836,12 +862,10 @@ internal fun AuthHero(
                 .matchParentSize()
                 .background(
                     Brush.verticalGradient(
-                        // 顶部压暗保证状态栏与品牌行可读；底部轻压一层让暖白标题压得住画面。
-                        // 不做「渐隐到纸面色」，否则标题会被洗白（实测第二行几乎看不见）。
                         0f to Color.Black.copy(alpha = 0.45f),
                         0.30f to Color.Black.copy(alpha = 0.10f),
                         0.62f to Color.Transparent,
-                        1f to Color.Black.copy(alpha = 0.30f),
+                        1f to Color.Black.copy(alpha = 0.63f),
                     ),
                 ),
         )
@@ -850,28 +874,11 @@ internal fun AuthHero(
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = 24.dp)
-                .padding(top = 12.dp, bottom = 20.dp),
+                .padding(top = 6.dp, bottom = 10.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             topBar()
-            Column {
-                Text(
-                    text = eyebrow,
-                    fontSize = 9.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 2.2.sp,
-                    color = colors.heroMuted,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = title,
-                    fontFamily = FontFamily.Serif,
-                    fontSize = 27.sp,
-                    lineHeight = 39.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.heroInk,
-                )
-                Spacer(modifier = Modifier.height(14.dp))
+            if (showSeasonPicker) {
                 AuthSeasonPills(
                     selected = HeroSeason.values()[seasonIndex],
                     onSelect = { picked ->
@@ -891,7 +898,7 @@ private fun AuthSeasonPills(
     onSelect: (HeroSeason) -> Unit,
 ) {
     val colors = authWebColors()
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         HeroSeason.values().forEach { season ->
             val isSelected = season == selected
             val shape = RoundedCornerShape(50)
@@ -904,14 +911,16 @@ private fun AuthSeasonPills(
                         color = if (isSelected) Color.Transparent else colors.heroInk.copy(alpha = 0.45f),
                         shape = shape,
                     )
-                    .clickable(role = Role.Button) { onSelect(season) }
-                    .padding(horizontal = 13.dp, vertical = 5.dp),
+                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                    .selectable(selected = isSelected, role = Role.Tab) { onSelect(season) }
+                    .padding(horizontal = 5.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = stringResource(season.labelRes),
                     fontSize = 11.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) colors.heading else colors.heroInk,
+                    color = if (isSelected) Color(0xFF241E19) else colors.heroInk,
                 )
             }
         }
@@ -920,7 +929,7 @@ private fun AuthSeasonPills(
 
 /** 图上品牌行：左侧 Logo + 名称，右侧一个描边胶囊入口。 */
 @Composable
-internal fun AuthHeroBrand(
+private fun AuthHeroBrand(
     trailingText: String? = null,
     onTrailingClick: (() -> Unit)? = null,
 ) {
@@ -933,28 +942,22 @@ internal fun AuthHeroBrand(
         Row(verticalAlignment = Alignment.CenterVertically) {
             OmniLogoMark(size = 34.dp)
             Spacer(modifier = Modifier.width(11.dp))
-            Column {
-                Text(
-                    text = "OmniRoute",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.2.sp,
-                    color = colors.heroInk,
-                )
-                Text(
-                    text = stringResource(R.string.auth_brand_tagline),
-                    fontSize = 11.sp,
-                    color = colors.heroMuted,
-                )
-            }
+            Text(
+                text = "OmniRoute",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.heroInk,
+            )
         }
         if (trailingText != null && onTrailingClick != null) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .border(1.dp, colors.heroInk.copy(alpha = 0.55f), RoundedCornerShape(50))
+                    .heightIn(min = 48.dp)
                     .clickable(role = Role.Button, onClick = onTrailingClick)
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = trailingText,
@@ -969,7 +972,7 @@ internal fun AuthHeroBrand(
 
 /** 纸面卡片：接在 Hero 下方，顶部圆角，内部独立滚动。 */
 @Composable
-internal fun AuthPaperCard(
+private fun AuthPaperCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -982,85 +985,12 @@ internal fun AuthPaperCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .imePadding()
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 20.dp),
             content = content,
         )
     }
-}
-
-/** 卡片顶部的「OmniRoute / 旅行者账号」小标识行。 */
-@Composable
-internal fun AuthCardBrandLine() {
-    val colors = authWebColors()
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        OmniLogoMark(size = 18.dp)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "OmniRoute",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = colors.heading,
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = stringResource(R.string.auth_account_kind),
-            fontSize = 12.sp,
-            color = colors.muted,
-        )
-    }
-}
-
-/** 登录/注册切换：Web 端的下划线式 Tab，而非分段胶囊。 */
-@Composable
-internal fun AuthWebTabs(
-    registerSelected: Boolean,
-    onLogin: () -> Unit,
-    onRegister: () -> Unit,
-) {
-    val colors = authWebColors()
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            WebTab(
-                text = stringResource(R.string.auth_tab_login_short),
-                selected = !registerSelected,
-                onClick = onLogin,
-            )
-            WebTab(
-                text = stringResource(R.string.auth_tab_register_short),
-                selected = registerSelected,
-                onClick = onRegister,
-            )
-        }
-        HorizontalDivider(thickness = 1.dp, color = colors.hairline)
-    }
-}
-
-@Composable
-private fun WebTab(text: String, selected: Boolean, onClick: () -> Unit) {
-    val colors = authWebColors()
-    Text(
-        text = text,
-        fontSize = 15.sp,
-        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-        color = if (selected) colors.heading else colors.muted,
-        modifier = Modifier
-            .clickable(enabled = !selected, role = Role.Tab, onClick = onClick)
-            .drawBehind {
-                if (selected) {
-                    val y = size.height - 1.dp.toPx()
-                    drawLine(
-                        color = colors.heading,
-                        start = androidx.compose.ui.geometry.Offset(0f, y),
-                        end = androidx.compose.ui.geometry.Offset(size.width, y),
-                        strokeWidth = 2.dp.toPx(),
-                    )
-                }
-            }
-            .padding(top = 8.dp, bottom = 12.dp, end = 2.dp),
-    )
 }
 
 /** 带标签的输入框：标签在框上方，框内只留图标与占位文案。 */

@@ -17,7 +17,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,8 +50,9 @@ internal fun RunningContent(
     members: List<RoomMember>,
     connected: Boolean,
 ) {
+    var detailsExpanded by rememberSaveable { mutableStateOf(false) }
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(12.dp),
         color = PlanCardBg,
         border = BorderStroke(1.dp, PlanSubtleBorder),
         modifier = Modifier.fillMaxWidth(),
@@ -125,20 +128,19 @@ internal fun RunningContent(
             }
 
             if (streamText.isNotBlank()) {
-                Spacer(modifier = Modifier.height(14.dp))
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = LocalAppPalette.current.surface,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
+                TextButton(onClick = { detailsExpanded = !detailsExpanded }) {
+                    Text(stringResource(
+                        if (detailsExpanded) R.string.plan_hide_progress_detail else R.string.plan_show_progress_detail,
+                    ))
+                }
+                if (detailsExpanded) {
                     Text(
                         text = streamText,
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp,
+                        fontSize = 13.sp,
+                        lineHeight = 19.sp,
                         color = Muted,
                         maxLines = 5,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(12.dp),
                     )
                 }
             }

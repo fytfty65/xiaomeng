@@ -211,6 +211,7 @@ fun AppNavHost(
                     }
                 },
                 onOpenRoom = { navController.navigate(Routes.ROOM) },
+                onOpenCommunity = { navController.navigate(Routes.COMMUNITY) },
                 onOpenNotifications = { navController.navigate(Routes.NOTIFICATIONS) },
                 onOpenProfile = { navController.navigate(Routes.PROFILE) },
                 onLoggedOut = {
