@@ -4,20 +4,18 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,19 +23,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -216,14 +208,6 @@ fun PlanningScreen(
                         PlanPhase.DONE -> R.string.plan_title_done
                     },
                 ),
-                stepHint = stringResource(
-                    when (phase) {
-                        PlanPhase.FORM -> R.string.plan_step_form
-                        PlanPhase.RUNNING -> R.string.plan_step_running
-                        PlanPhase.FAILED -> R.string.plan_step_failed
-                        PlanPhase.DONE -> R.string.plan_step_done
-                    },
-                ),
             )
 
             Column(
@@ -400,37 +384,28 @@ private fun VariantPoolAction(
 private fun PlanningTopBar(
     onBack: () -> Unit,
     title: String,
-    stepHint: String,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            CircleIconButton(
-                icon = Icons.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.common_back),
-                onClick = onBack,
-                background = PlanCardBg,
-                borderColor = PlanSubtleBorder,
-                tint = Ink,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(text = title, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Ink)
-        }
-
-        Surface(shape = RoundedCornerShape(50), color = PlanOrangeLightBg) {
-            Text(
-                text = stepHint,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = BrandOrange,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            )
-        }
+        CircleIconButton(
+            icon = Icons.Filled.ArrowBack,
+            contentDescription = stringResource(R.string.common_back),
+            onClick = onBack,
+            background = PlanCardBg,
+            borderColor = PlanSubtleBorder,
+            tint = Ink,
+        )
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            color = Ink,
+            modifier = Modifier.semantics { heading() },
+        )
     }
 }
 

@@ -13,9 +13,9 @@
     <string name="common_processing">处理中…</string>
 
     <!-- 规划主流程 -->
-    <string name="plan_title_form">智能路线定制</string>
-    <string name="plan_title_running">多智能体推演</string>
-    <string name="plan_title_done">方案决策概览</string>
+    <string name="plan_title_form">新建行程</string>
+    <string name="plan_title_running">正在生成行程</string>
+    <string name="plan_title_done">查看行程</string>
     <string name="plan_step_form">参数设定</string>
     <string name="plan_step_running">推演中</string>
     <string name="plan_step_failed">需要重试</string>
@@ -24,15 +24,15 @@
     <string name="plan_discard_message">路线或备注已修改但尚未保存，直接离开会丢失这些改动。</string>
     <string name="plan_discard_confirm">放弃并离开</string>
     <string name="plan_discard_cancel">继续编辑</string>
-    <string name="plan_error_run_failed">推演未能完成，请重试</string>
+    <string name="plan_error_run_failed">行程生成失败，请重试</string>
     <string name="plan_error_no_result">没有收到可用的行程结果，请重试</string>
 
     <!-- 底部操作栏 -->
-    <string name="plan_start">启动 AI 协作规划</string>
+    <string name="plan_start">生成行程</string>
     <string name="plan_creating_room">正在创建协作房间…</string>
-    <string name="plan_stop">终止推演</string>
+    <string name="plan_stop">停止生成</string>
     <string name="plan_back_to_edit">返回修改</string>
-    <string name="plan_retry">重新推演</string>
+    <string name="plan_retry">重新生成</string>
     <string name="plan_retrying">重试中…</string>
     <string name="plan_save_error_suffix">%1$s（方案已保留，可重试）</string>
     <string name="plan_replan">重新规划</string>
@@ -46,27 +46,29 @@
     <string name="plan_saving">正在保存…</string>
 
     <!-- 推演进度 -->
-    <string name="plan_running_header">%1$s · 多智能体推演中</string>
-    <string name="plan_running_intent_fallback">正在分析诉求并拆解行程结构</string>
-    <string name="plan_running_waiting">已提交诉求，等待第一段推演结果…</string>
-    <string name="plan_ws_connected">实时通道已连接</string>
-    <string name="plan_ws_connecting">实时通道连接中</string>
+    <string name="plan_running_header">正在安排 %1$s 行程</string>
+    <string name="plan_running_intent_fallback">正在整理出行信息</string>
+    <string name="plan_running_waiting">正在查询目的地信息…</string>
+    <string name="plan_ws_connected">进度实时更新</string>
+    <string name="plan_ws_connecting">正在连接…</string>
+    <string name="plan_show_progress_detail">查看生成详情</string>
+    <string name="plan_hide_progress_detail">收起生成详情</string>
     <string name="plan_members_sync">%1$d 人协同</string>
-    <string name="plan_failed_title">推演未完成</string>
+    <string name="plan_failed_title">没能生成行程</string>
 
     <!-- 反馈卡片 -->
     <string name="plan_feedback_title">这份方案可用吗？</string>
-    <string name="plan_feedback_subtitle">反馈会写入你的旅行画像，用于下一次推演。</string>
+    <string name="plan_feedback_subtitle">我们会参考你的反馈改进下次的行程。</string>
     <string name="plan_feedback_reason_hint">想补充一句评价？（选填）</string>
     <string name="plan_feedback_positive">认可这份方案</string>
     <string name="plan_feedback_negative">需要调整</string>
     <string name="plan_feedback_positive_done">已记录你的认可，谢谢。</string>
-    <string name="plan_feedback_negative_done">已收到调整诉求，画像会据此更新。</string>
+    <string name="plan_feedback_negative_done">已收到你的反馈。</string>
 
     <!-- 结果视图 -->
     <string name="plan_result_book">%1$s 专属路书</string>
     <string name="plan_result_book_default">本次</string>
-    <string name="plan_result_subtitle">多智能体已完成交通、住宿与景点时序博弈推演</string>
+    <string name="plan_result_subtitle">查看每天的路线、住宿和交通安排</string>
     <string name="plan_result_recommended">推荐方案</string>
     <string name="plan_result_meta_days">天数</string>
     <string name="plan_result_meta_nodes">节点</string>
@@ -89,12 +91,12 @@
     <string name="plan_result_note">备注：%1$s</string>
 
     <!-- 规划表单 -->
-    <string name="plan_form_chat_title">一句话规划</string>
+    <string name="plan_form_chat_title">一句话填写行程</string>
     <string name="plan_form_chat_route">对话式入口</string>
-    <string name="plan_form_chat_placeholder">例如：我想去成都玩 3 天，想探索美食和小众地方，节奏悠闲</string>
-    <string name="plan_form_chat_apply">解析描述</string>
-    <string name="plan_form_chat_parsing">解析中…</string>
-    <string name="plan_form_chat_confirm">确认填入</string>
+    <string name="plan_form_chat_placeholder">例如：下周去成都玩 3 天，两个人，想多逛逛小吃街</string>
+    <string name="plan_form_chat_apply">提取行程信息</string>
+    <string name="plan_form_chat_parsing">正在读取…</string>
+    <string name="plan_form_chat_confirm">填入表单</string>
     <string name="plan_parsed_summary">识别结果：%1$s</string>
     <string name="plan_parsed_city">目的地 %1$s</string>
     <string name="plan_parsed_origin">出发地 %1$s</string>
@@ -104,27 +106,27 @@
     <string name="plan_parsed_separator"> · </string>
     <string name="plan_form_engine_title">OmniRoute 决策引擎</string>
     <string name="plan_form_engine_subtitle">填写目的地与偏好，多智能体协同推演最舒适行程</string>
-    <string name="plan_form_section_route">目的地与出发地</string>
+    <string name="plan_form_section_route">地点</string>
     <string name="plan_form_destination_label">目的地</string>
-    <string name="plan_form_destination_hint">想去哪儿？例如：新疆、成都、京都</string>
+    <string name="plan_form_destination_hint">例如成都、京都</string>
     <string name="plan_form_origin_label">出发地</string>
-    <string name="plan_form_origin_hint">从哪里出发？（选填，用于规划首日交通）</string>
-    <string name="plan_form_section_time">行程时间与同行成员</string>
-    <string name="plan_form_days_title">计划游玩天数</string>
+    <string name="plan_form_origin_hint">选填</string>
+    <string name="plan_form_section_time">时间与人数</string>
+    <string name="plan_form_days_title">旅行天数</string>
     <string name="plan_form_days_hint">建议 2 ~ 7 天以保证体验充裕</string>
     <string name="plan_form_days_unit">天</string>
     <string name="plan_form_travelers_title">出行人数</string>
     <string name="plan_form_travelers_hint">将根据团队规模匹配车型与房型推荐</string>
     <string name="plan_form_travelers_unit">人</string>
-    <string name="plan_form_section_budget">总预算与旅行偏好</string>
+    <string name="plan_form_section_budget">预算与偏好</string>
     <string name="plan_form_preference_title">旅行偏好（可多选）</string>
     <string name="plan_form_preference_hint">偏好会影响景点、餐饮与节奏的取舍</string>
-    <string name="plan_form_room_hint">当前协作房间「%1$s」· 邀请码 %2$s，同伴加入后推演成员会实时同步</string>
+    <string name="plan_form_room_hint">协作房间「%1$s」 · 邀请码 %2$s</string>
     <string name="plan_form_clear">清除</string>
     <string name="plan_form_date_label">出发日期</string>
-    <string name="plan_form_date_hint">2026-11-05（选填）</string>
+    <string name="plan_form_date_hint">选填</string>
     <string name="plan_form_budget_label">总预算</string>
-    <string name="plan_form_budget_hint">不填则不设预算上限（元）</string>
+    <string name="plan_form_budget_hint">选填</string>
     <string name="plan_form_budget_unit">元</string>
     <string name="plan_retrieval_summary">将按以下方向检索：%1$s</string>
     <string name="plan_retrieval_join">、</string>
@@ -189,7 +191,7 @@
     <string name="plan_detail_range">动态波动区间：%1$s</string>
     <string name="plan_detail_audit_title">数据源与可信度审计</string>
     <string name="plan_detail_source_fallback">知识图谱本地策略（暂无第三方 API 直连）</string>
-    <string name="plan_detail_disclaimer">该条目由多智能体协同评估模型推演生成，实时预订价格与营业状态以官方系统为准。</string>
+    <string name="plan_detail_disclaimer">价格、营业时间及余位以预订平台或商家信息为准。</string>
     <string name="plan_detail_timestamp">数据提取时间戳：%1$s</string>
     <string name="plan_detail_fact_segments">路线分段构成</string>
     <string name="plan_detail_fact_duration">预估耗时</string>
@@ -201,7 +203,7 @@
     <string name="plan_detail_buffer_value">%1$d 分钟</string>
     <string name="plan_detail_carbon_value">约 %1$s kg</string>
     <string name="plan_detail_open_time">开放时间：%1$s，出行前请以官方渠道确认</string>
-    <string name="plan_detail_node_disclaimer">路线节点由多智能体协同排程生成，实时价格、营业与余位以官方系统为准。</string>
+    <string name="plan_detail_node_disclaimer">价格、营业时间及余位以预订平台或商家信息为准。</string>
     <string name="plan_detail_price_unknown">平台未获取到官方直连锁价，请以最终核验价格为准。</string>
     <string name="plan_detail_price_estimated">该价格基于历史知识库模型拟合，仅供预算评估参考。</string>
     <string name="plan_detail_duration_minutes">%1$d 分钟</string>
@@ -225,7 +227,7 @@
     <string name="plan_error_feedback_failed">反馈提交失败，请稍后重试</string>
     <string name="plan_error_stream_closed">实时通道已关闭（%1$s），请重试</string>
     <string name="plan_chat_replan">把「%1$s」重新安排一下</string>
-    <string name="plan_error_interrupted">推演在系统回收进程后中断，请重新启动推演</string>
+    <string name="plan_error_interrupted">行程生成已中断，请重试</string>
 
     <!-- 首页 -->
     <string name="home_error_profile">加载个人资料失败</string>
@@ -236,6 +238,13 @@
     <string name="home_greeting_afternoon">下午好</string>
     <string name="home_greeting_evening">晚上好</string>
     <string name="home_reload_profile">重新加载个人资料</string>
+    <string name="home_heading">下一站去哪儿？</string>
+    <string name="home_profile">个人主页</string>
+    <string name="home_community">旅行社区</string>
+    <string name="home_trip_days">%1$d 天</string>
+    <string name="plan_chat_expanded">已展开</string>
+    <string name="plan_chat_collapsed">已收起</string>
+    <string name="plan_chat_description">想去哪里，玩几天？</string>
     <string name="home_my_trips">我的行程</string>
     <string name="home_engine_subtitle">智能多代理行程引擎</string>
     <string name="home_loading">加载中</string>
@@ -286,17 +295,17 @@
     <string name="home_start_plan">开始规划</string>
     <string name="home_room_title">协作房间</string>
     <string name="home_room_sub">邀请同行者实时同步</string>
-    <string name="home_risk_title">风险通知</string>
+    <string name="home_risk_title">旅行提醒</string>
     <string name="home_unread">共 %1$d 条未读提醒</string>
     <string name="home_no_alerts">暂无新提醒</string>
-    <string name="home_trip_count">共 %1$d 份</string>
-    <string name="home_syncing">正在同步云端行程…</string>
+    <string name="home_trip_count">%1$d 个行程</string>
+    <string name="home_syncing">正在加载行程…</string>
     <string name="home_retry">重试</string>
     <string name="home_empty_title">还没有保存的行程</string>
     <string name="home_empty_sub">生成的行程方案保存后会自动归档在这里</string>
     <string name="home_empty_action">去创建第一份行程</string>
     <string name="home_trip_travelers">%1$d人同行</string>
-    <string name="home_trip_title">%1$s 深度游方案</string>
+    <string name="home_trip_title">%1$s行程</string>
     <string name="home_trip_unnamed">未命名行程</string>
     <string name="home_account">账号 @%1$s</string>
     <string name="home_registered">注册于 %1$s · Web 端实时同步</string>
@@ -624,7 +633,7 @@
     <string name="room_error_invite_invalid">邀请码应为 6 位字母或数字</string>
 
     <!-- Java 业务层：实时规划阶段与异常 -->
-    <string name="plan_stage_negotiation_started">多智能体开始协商</string>
+    <string name="plan_stage_negotiation_started">正在比较路线与交通方案</string>
     <string name="plan_stage_reasoning">推理中</string>
     <string name="plan_stage_target_city">锁定目的地</string>
     <string name="plan_stage_weather">查询天气</string>

@@ -22,20 +22,25 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -46,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omniroute.app.R
 import com.omniroute.app.core.room.RoomSession
-import com.omniroute.app.core.ui.components.OmniLogoMark
 import com.omniroute.app.feature.auth.BrandOrange
 import com.omniroute.app.feature.auth.InfoBg
 import com.omniroute.app.feature.auth.InfoFg
@@ -89,6 +93,7 @@ internal fun retrievalHint(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChatIdeaCard(
     text: String,
@@ -99,118 +104,76 @@ private fun ChatIdeaCard(
     onApply: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    var expanded by rememberSaveable { mutableStateOf(text.isNotBlank() || parsed != null) }
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(12.dp),
         color = PlanCardBg,
         border = BorderStroke(1.dp, PlanSubtleBorder),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RoundedCornerShape(50), color = PlanOrangeLightBg) {
-                    Text(
-                        text = "AI",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BrandOrange,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.plan_form_chat_title),
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink,
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(text = stringResource(R.string.plan_form_chat_route), fontSize = 12.sp, color = Muted)
-            }
-
-            Spacer(modifier = Modifier.height(9.dp))
-
-            Box(
+        Column {
+            val state = stringResource(
+                if (expanded) R.string.plan_chat_expanded else R.string.plan_chat_collapsed,
+            )
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(PlanTagBg)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .heightIn(min = 52.dp)
+                    .semantics { stateDescription = state }
+                    .clickable(role = Role.Button) { expanded = !expanded }
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (text.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.plan_form_chat_placeholder),
-                        fontSize = 12.sp,
-                        color = Muted,
-                    )
-                }
-                BasicTextField(
-                    value = text,
-                    onValueChange = { if (it.length <= 200) onTextChange(it) },
-                    textStyle = TextStyle(fontSize = 13.sp, color = Ink),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 42.dp),
+                Text(
+                    text = stringResource(R.string.plan_form_chat_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Ink,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = Muted,
                 )
             }
 
-            Spacer(modifier = Modifier.height(9.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 只有拿到结构化结果后才显示「确认填入」，避免误识别直接覆盖表单。
-                if (parsed != null) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = PlanOrangeLightBg,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .minimumInteractiveComponentSize()
-                            .clickable(role = Role.Button, onClick = onConfirm),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.plan_form_chat_confirm),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = BrandOrange,
-                            modifier = Modifier.padding(horizontal = 13.dp, vertical = 7.dp),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = BrandOrange,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .minimumInteractiveComponentSize()
-                        .clickable(enabled = !parsing, role = Role.Button, onClick = onApply),
-                ) {
-                    Text(
-                        text = stringResource(
-                            if (parsing) {
-                                R.string.plan_form_chat_parsing
-                            } else {
-                                R.string.plan_form_chat_apply
-                            },
-                        ),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 7.dp),
+            if (expanded) {
+                Column(modifier = Modifier.padding(horizontal = 14.dp).padding(bottom = 8.dp)) {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { if (it.length <= 200) onTextChange(it) },
+                        label = { Text(stringResource(R.string.plan_chat_description)) },
+                        placeholder = { Text(stringResource(R.string.plan_form_chat_placeholder)) },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth(),
                     )
+                    hint?.let {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        InlineBanner(text = it, bg = InfoBg, fg = InfoFg, icon = Icons.Filled.Info)
+                    }
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    ) {
+                        TextButton(onClick = onApply, enabled = text.isNotBlank() && !parsing) {
+                            Text(stringResource(
+                                if (parsing) R.string.plan_form_chat_parsing else R.string.plan_form_chat_apply,
+                            ))
+                        }
+                        if (parsed != null) {
+                            TextButton(onClick = onConfirm, enabled = !parsing) {
+                                Text(stringResource(R.string.plan_form_chat_confirm))
+                            }
+                        }
+                    }
                 }
-            }
-
-            hint?.let {
-                Spacer(modifier = Modifier.height(9.dp))
-                InlineBanner(text = it, bg = InfoBg, fg = InfoFg, icon = Icons.Filled.Info)
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun FormContent(
     chatText: String,
@@ -237,53 +200,14 @@ internal fun FormContent(
     onTogglePreference: (String) -> Unit,
     room: RoomSession?,
 ) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        OmniLogoMark(size = 42.dp)
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(
-                text = stringResource(R.string.plan_form_engine_title),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Ink,
-            )
-            Text(
-                text = stringResource(R.string.plan_form_engine_subtitle),
-                fontSize = 12.sp,
-                color = Muted,
-            )
-        }
-    }
-
-    Spacer(modifier = Modifier.height(18.dp))
-
-    ChatIdeaCard(
-        text = chatText,
-        onTextChange = onChatTextChange,
-        hint = chatHint,
-        parsing = chatParsing,
-        parsed = chatParsed,
-        onApply = onApplyChat,
-        onConfirm = onConfirmChat,
-    )
-
-    Spacer(modifier = Modifier.height(22.dp))
-
     FormSectionTitle(text = stringResource(R.string.plan_form_section_route))
     Spacer(modifier = Modifier.height(8.dp))
 
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(12.dp),
         color = PlanCardBg,
         border = BorderStroke(1.dp, PlanSubtleBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 5.dp,
-                shape = RoundedCornerShape(18.dp),
-                ambientColor = Color.Black.copy(alpha = 0.02f),
-                spotColor = BrandOrange.copy(alpha = 0.05f),
-            ),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             IntegratedCityInputRow(
@@ -306,13 +230,24 @@ internal fun FormContent(
         }
     }
 
-    Spacer(modifier = Modifier.height(20.dp))
+    Spacer(modifier = Modifier.height(10.dp))
+    ChatIdeaCard(
+        text = chatText,
+        onTextChange = onChatTextChange,
+        hint = chatHint,
+        parsing = chatParsing,
+        parsed = chatParsed,
+        onApply = onApplyChat,
+        onConfirm = onConfirmChat,
+    )
+
+    Spacer(modifier = Modifier.height(24.dp))
 
     FormSectionTitle(text = stringResource(R.string.plan_form_section_time))
     Spacer(modifier = Modifier.height(8.dp))
 
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(12.dp),
         color = PlanCardBg,
         border = BorderStroke(1.dp, PlanSubtleBorder),
         modifier = Modifier.fillMaxWidth(),
@@ -326,7 +261,6 @@ internal fun FormContent(
             HorizontalDivider(color = PlanFormDivider, thickness = 1.dp)
             ModernStepperRow(
                 title = stringResource(R.string.plan_form_days_title),
-                subHint = stringResource(R.string.plan_form_days_hint),
                 value = days,
                 unit = stringResource(R.string.plan_form_days_unit),
                 min = 1,
@@ -336,7 +270,6 @@ internal fun FormContent(
             HorizontalDivider(color = PlanFormDivider, thickness = 1.dp)
             ModernStepperRow(
                 title = stringResource(R.string.plan_form_travelers_title),
-                subHint = stringResource(R.string.plan_form_travelers_hint),
                 value = travelers,
                 unit = stringResource(R.string.plan_form_travelers_unit),
                 min = 1,
@@ -352,7 +285,7 @@ internal fun FormContent(
     Spacer(modifier = Modifier.height(8.dp))
 
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(12.dp),
         color = PlanCardBg,
         border = BorderStroke(1.dp, PlanSubtleBorder),
         modifier = Modifier.fillMaxWidth(),
@@ -367,29 +300,18 @@ internal fun FormContent(
                     fontWeight = FontWeight.SemiBold,
                     color = Ink,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = stringResource(R.string.plan_form_preference_hint),
-                    fontSize = 12.sp,
-                    color = Muted,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                val rows = PreferenceOptions.chunked(4)
-                rows.forEachIndexed { rowIndex, row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        row.forEach { label ->
-                            PreferenceChip(
-                                label = label,
-                                selected = preferences.contains(label),
-                                onClick = { onTogglePreference(label) },
-                            )
-                        }
-                    }
-                    if (rowIndex != rows.lastIndex) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    PreferenceOptions.forEach { label ->
+                        PreferenceChip(
+                            label = label,
+                            selected = preferences.contains(label),
+                            onClick = { onTogglePreference(label) },
+                        )
                     }
                 }
             }
@@ -409,7 +331,12 @@ internal fun FormContent(
 
 @Composable
 private fun FormSectionTitle(text: String) {
-    Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ink)
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleLarge,
+        color = Ink,
+        modifier = Modifier.semantics { heading() },
+    )
 }
 
 /** 现代一体式输入行组件 */
@@ -703,7 +630,6 @@ private fun PreferenceChip(label: String, selected: Boolean, onClick: () -> Unit
 @Composable
 private fun ModernStepperRow(
     title: String,
-    subHint: String,
     value: Int,
     unit: String,
     min: Int,
@@ -716,11 +642,13 @@ private fun ModernStepperRow(
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = subHint, fontSize = 12.sp, color = Muted)
-        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = Ink,
+            modifier = Modifier.weight(1f),
+        )
 
         Row(
             verticalAlignment = Alignment.CenterVertically,

@@ -2,35 +2,31 @@ package com.omniroute.app.feature.plan
 
 import androidx.compose.material3.minimumInteractiveComponentSize
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omniroute.app.R
-import com.omniroute.app.feature.auth.BrandOrange
+import com.omniroute.app.core.ui.theme.LocalAppPalette
 import com.omniroute.app.feature.auth.ErrorBg
 import com.omniroute.app.feature.auth.ErrorFg
 import com.omniroute.app.feature.auth.Ink
@@ -52,7 +48,6 @@ internal fun PlanningFooter(
     Surface(
         color = PlanCardBg,
         border = BorderStroke(1.dp, PlanSubtleBorder.copy(alpha = 0.7f)),
-        shadowElevation = 12.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -160,54 +155,29 @@ internal fun ModernFullButton(
     loadingText: String,
     onClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(targetValue = if (isPressed) 0.985f else 1f, label = "btn_scale")
-
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = Color.Transparent,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .scale(scale)
-            .clip(RoundedCornerShape(14.dp))
-            .background(
-                Brush.horizontalGradient(colors = listOf(BrandOrange, Color(0xFFFF6D2B))),
-            )
-            .minimumInteractiveComponentSize().clickable(
-                enabled = !loading,
-                role = Role.Button,
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-            ),
+    val palette = LocalAppPalette.current
+    Button(
+        onClick = onClick,
+        enabled = !loading,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = palette.brandDark,
+            contentColor = palette.onBrand,
+        ),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            if (loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = Color.White,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = loadingText, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            } else {
-                Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(15.dp),
-                )
-            }
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp,
+                color = LocalContentColor.current,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
         }
+        Text(
+            text = if (loading) loadingText else text,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
-
-/** 内置矢量星轨与罗盘 Logo */
