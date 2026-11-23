@@ -1,5 +1,11 @@
 package com.omniroute.app.feature.trip
 
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.remember
 import com.omniroute.app.core.ui.components.DestinationCover
 import com.omniroute.app.core.ui.theme.editionRim
 import androidx.compose.foundation.layout.heightIn
@@ -121,6 +127,7 @@ internal fun TripTopBar(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val compact = LocalConfiguration.current.screenWidthDp < 395 || LocalDensity.current.fontScale > 1.15f
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,7 +135,7 @@ internal fun TripTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             CircleIconButton(
                 icon = Icons.Filled.ArrowBack,
                 contentDescription = stringResource(R.string.common_back),
@@ -155,12 +162,23 @@ internal fun TripTopBar(
                     },
                     fontSize = 12.sp,
                     color = Muted,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
         }
 
-        // 行程分享 / 编辑入口 + 统一品牌矢量 Logo
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        if (compact) {
+            var open by remember { mutableStateOf(false) }
+            Box {
+                TopBarAction(Icons.Filled.MoreVert, "更多行程操作", actionsEnabled) { open = true }
+                DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                    listOf(R.string.trip_share to onShare, R.string.trip_rename_desc to onEdit,
+                        R.string.trip_delete_desc to onDelete).forEach { (label, action) ->
+                        DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = { open = false; action() })
+                    }
+                }
+            }
+        } else Row(verticalAlignment = Alignment.CenterVertically) {
             TopBarAction(
                 icon = Icons.Filled.Share,
                 description = stringResource(R.string.trip_share),

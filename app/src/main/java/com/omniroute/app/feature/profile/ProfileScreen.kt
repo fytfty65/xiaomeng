@@ -481,6 +481,7 @@ private fun ProfileHero(
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = user?.username?.takeIf { it.isNotBlank() }?.let { "@$it" } ?: "—",
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
                         fontSize = 12.5.sp,
                         color = Muted,
                     )
