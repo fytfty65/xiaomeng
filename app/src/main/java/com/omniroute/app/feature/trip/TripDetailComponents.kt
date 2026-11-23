@@ -127,7 +127,7 @@ internal fun TripTopBar(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val compact = LocalConfiguration.current.screenWidthDp < 395 || LocalDensity.current.fontScale > 1.15f
+    val compact = LocalConfiguration.current.screenWidthDp < 450 || LocalDensity.current.fontScale > 1.15f
     Row(
         modifier = Modifier
             .fillMaxWidth()
