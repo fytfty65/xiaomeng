@@ -1,5 +1,9 @@
 package com.omniroute.app.feature.community
 
+import com.omniroute.app.core.ui.components.DestinationCover
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.foundation.shape.CircleShape
+import com.omniroute.app.core.ui.theme.editionRim
 import com.omniroute.app.core.planning.PlanRequest
 import com.omniroute.app.core.ui.components.SeasonArtwork
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
@@ -172,7 +176,7 @@ private fun Feed(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.community_title),
-                        fontSize = 18.sp,
+                        fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = palette.ink,
                     )
@@ -289,13 +293,23 @@ private fun PostCard(
             .clickable(role = Role.Button, onClick = onClick),
     ) {
         Column {
-            SeasonArtwork(Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
-                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0x99142026)))))
+            DestinationCover(post.city, preview.stops.any { "天池" in it }, Modifier.fillMaxWidth().height(180.dp)) {
+                Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(75.dp)
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xB3131821)))))
                 if (post.city.isNotBlank()) {
-                    Text(
-                        post.city, modifier = Modifier.align(Alignment.BottomStart).padding(14.dp),
-                        color = Color.White, fontFamily = style.titleFont, fontWeight = style.titleWeight, fontSize = 20.sp,
-                    )
+                    Row(Modifier.align(Alignment.BottomStart).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.LocationOn, null, tint = Color.White, modifier = Modifier.size(17.dp))
+                        Text(listOfNotNull(post.city, preview.days?.let { "$it 天" }).joinToString(" · "),
+                            color = Color.White, fontFamily = style.titleFont, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                    }
+                }
+                if (PlanRequest.isSupportedDestination(post.city) && preview.stops.isNotEmpty()) {
+                    Surface(onClick = { onUsePlan(post.city, preview.days ?: 3) },
+                        modifier = Modifier.align(Alignment.TopEnd).padding(10.dp), shape = CircleShape,
+                        color = Color(0x880E1B22), border = BorderStroke(0.7.dp, Color.White.copy(alpha = 0.5f))) {
+                        Text("套用同款  ↗", color = Color.White, fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                    }
                 }
             }
             Column(Modifier.padding(14.dp)) {
@@ -339,10 +353,11 @@ private fun PostCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (post.city.isNotBlank() && PlanRequest.isSupportedDestination(post.city) && preview.stops.isNotEmpty()) {
-                    TextButton(onClick = { onUsePlan(post.city, preview.days ?: 3) }) {
-                        Text("套用行程", fontSize = 12.sp)
-                    }
+                if (preview.stops.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(preview.stops.take(3).joinToString("  →  "), color = palette.brand, fontSize = 12.sp,
+                        lineHeight = 18.sp, modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                            .background(palette.brandTint).padding(horizontal = 9.dp, vertical = 5.dp))
                 }
                 if (preview.summary.isNotBlank()) {
                     Spacer(modifier = Modifier.height(5.dp))
@@ -350,18 +365,14 @@ private fun PostCard(
                         text = preview.summary,
                         fontSize = 12.5.sp,
                         color = palette.ink.copy(alpha = 0.82f),
-                        maxLines = 4,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (preview.stops.isNotEmpty()) {
-                    Spacer(Modifier.height(9.dp))
-                    Text(preview.stops.joinToString("  ─  "), color = palette.brand, fontSize = 11.sp, lineHeight = 17.sp)
-                }
-                if (post.tags.isNotEmpty() || preview.days != null) {
+                if (post.tags.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(9.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        val tags = listOfNotNull(preview.days?.let { "$it 天" }) + post.tags.take(4).map { "#$it" }
+                        val tags = post.tags.take(4).map { "#$it" }
                         tags.forEach { tag ->
                             Box(
                                 modifier = Modifier

@@ -1,5 +1,9 @@
 package com.omniroute.app.feature.profile
 
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.rotate
+import com.omniroute.app.core.ui.theme.editionRim
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.material.icons.filled.Info
 import com.omniroute.app.core.ui.components.SeasonGallery
 import com.omniroute.app.core.ui.theme.EditionSurface
@@ -228,8 +232,8 @@ fun ProfileScreen(
             SectionTitle(text = stringResource(R.string.profile_section_content))
             Spacer(modifier = Modifier.height(10.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     ProfileTile(
                         modifier = Modifier.weight(1f).fillMaxHeight(),
                         icon = Icons.Filled.List,
@@ -249,7 +253,7 @@ fun ProfileScreen(
                         onClick = onOpenNotifications,
                     )
                 }
-                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     ProfileTile(
                         modifier = Modifier.weight(1f).fillMaxHeight(),
                         icon = Icons.Filled.Person,
@@ -380,7 +384,7 @@ private fun ProfileTopBar(onBack: () -> Unit) {
             Column {
                 Text(
                     text = stringResource(R.string.profile_title),
-                    fontSize = 17.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink,
                 )
@@ -405,32 +409,31 @@ private fun ProfileHero(
     onPickAvatar: () -> Unit,
 ) {
     val style = LocalJourneySeason.current.edition
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = EditionSurface,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(17.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("旅行护照", fontFamily = style.titleFont, fontWeight = style.titleWeight, fontSize = 22.sp, color = Ink)
-                    Text("OMNIROUTE PASSPORT", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = BrandOrange, letterSpacing = 1.sp)
-                }
-                OmniSeasonLogo(diameter = 38.dp)
-            }
-            Spacer(Modifier.height(14.dp))
+    val palette = LocalAppPalette.current
+    val shape = RoundedCornerShape(24.dp)
+    Box(Modifier.fillMaxWidth().editionRim(shape).clip(shape).background(Brush.linearGradient(
+        listOf(lerp(palette.surface, style.glow, 0.22f), lerp(palette.surface, style.secondary, 0.20f)),
+    ))) {
+        OmniSeasonLogo(Modifier.align(Alignment.TopEnd).padding(6.dp).rotate(-14f), diameter = 90.dp,
+            tint = palette.brand.copy(alpha = 0.13f))
+        Column(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
+            Text("OMNIROUTE   /   PASSPORT", fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                color = BrandOrange, letterSpacing = 1.6.sp)
+            Text("旅行护照", fontFamily = style.titleFont, fontWeight = FontWeight.SemiBold,
+                fontSize = 27.sp, lineHeight = 36.sp, color = Ink)
+            Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val initial = user?.displayName?.trim()?.firstOrNull()?.uppercase() ?: "U"
                 Box {
                     RemoteAvatar(
                         path = user?.avatarUrl,
                         fallback = initial,
-                        size = 60.dp,
+                        size = 56.dp,
                         background = AccentOrangeBg,
                         foreground = BrandOrange,
                         fontSize = 24.sp,
                         contentDescription = stringResource(R.string.profile_avatar_change),
-                        modifier = Modifier.clickable(
+                        modifier = Modifier.border(2.dp, Color.White, CircleShape).clickable(
                             enabled = !uploading,
                             role = Role.Button,
                             onClick = onPickAvatar,
@@ -509,53 +512,32 @@ private fun ProfileHero(
             }
 
             Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = SubtleLine, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(12.dp))
-
             tripCount?.let {
                 val trips = stringResource(R.string.profile_trips_count, it)
                 val cities = cityCount?.let { count -> "探索 $count 座城市" }
-                Text(listOfNotNull(trips, cities).joinToString("  ·  "), color = BrandOrange, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(5.dp))
+                Text(listOfNotNull(trips, cities).joinToString("   ·   "), color = palette.ink,
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp))
+                        .background(palette.brand.copy(alpha = 0.075f)).padding(horizontal = 11.dp, vertical = 7.dp),
+                    fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
-            Text(
-                fontFamily = style.titleFont,
-                text = user?.signature?.trim()?.takeIf { it.isNotEmpty() }
-                    ?: stringResource(R.string.profile_no_signature),
-                fontSize = 12.5.sp,
-                lineHeight = 19.sp,
-                color = if (user?.signature.isNullOrBlank()) Muted else Ink.copy(alpha = 0.85f),
-            )
+            user?.signature?.trim()?.takeIf { it.isNotEmpty() }?.let {
+                Text(it, fontSize = 12.sp, color = Muted, modifier = Modifier.padding(top = 6.dp))
+            }
         }
     }
 }
 
 @Composable
 private fun SectionTitle(text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(width = 4.dp, height = 14.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(BrandOrange),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Ink,
-        )
-    }
+    Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Ink)
 }
 
 @Composable
 private fun EntryGroup(content: @Composable () -> Unit) {
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
-        modifier = Modifier.fillMaxWidth(),
+        color = EditionSurface,
+        modifier = Modifier.editionRim(RoundedCornerShape(18.dp)).fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(vertical = 4.dp)) {
             content()
@@ -581,13 +563,24 @@ private fun ProfileTile(
     modifier: Modifier = Modifier,
 ) {
     val palette = LocalAppPalette.current
-    Surface(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(17.dp), color = EditionSurface) {
-        Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Surface(shape = CircleShape, color = palette.brandTint) {
-                Icon(icon, null, tint = palette.brand, modifier = Modifier.padding(6.dp).size(17.dp))
+    val color = when (icon) {
+        Icons.Filled.Info -> Color(0xFF367C72)
+        Icons.Filled.Person -> Color(0xFF7961A6)
+        Icons.Filled.Add -> Color(0xFFAE6D35)
+        else -> palette.brand
+    }
+    val shape = RoundedCornerShape(18.dp)
+    Surface(onClick = onClick, modifier = modifier.editionRim(shape), shape = shape, color = EditionSurface) {
+        Column(Modifier.heightIn(min = 110.dp).padding(15.dp)) {
+            Box(Modifier.size(42.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(
+                listOf(color.copy(alpha = 0.26f), color.copy(alpha = 0.08f)))),
+                contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = if (androidx.compose.foundation.isSystemInDarkTheme()) palette.ink else color,
+                    modifier = Modifier.size(22.dp))
             }
-            Text(title, color = Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = Muted, fontSize = 11.sp, lineHeight = 15.sp)
+            Spacer(Modifier.height(10.dp))
+            Text(title, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = Muted, fontSize = 11.sp, lineHeight = 16.sp)
         }
     }
 }
@@ -650,9 +643,8 @@ private fun ProfileEntryRow(
 private fun AccountInfoCard(user: UserDto?) {
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
-        modifier = Modifier.fillMaxWidth(),
+        color = EditionSurface,
+        modifier = Modifier.editionRim(RoundedCornerShape(18.dp)).fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             InfoRow(

@@ -1,5 +1,11 @@
 package com.omniroute.app.feature.budget
 
+import com.omniroute.app.core.ui.theme.inkFoil
+import com.omniroute.app.core.ui.theme.editionRim
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.lerp
 import com.omniroute.app.core.ui.theme.EditionSurface
 import com.omniroute.app.core.ui.theme.OmniSeasonLogo
@@ -159,7 +165,7 @@ fun BudgetScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.budget_title),
-                    fontSize = 18.sp,
+                    fontSize = 25.sp,
                     fontWeight = FontWeight.Bold,
                     color = palette.ink,
                 )
@@ -260,12 +266,16 @@ fun BudgetScreen(
                 }
 
                 item(key = "manual_entry") {
-                    TextButton(
-                        onClick = viewModel::openAddExpense,
-                        enabled = !state.submitting && !state.recognizing,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("手动记一笔", fontSize = 12.sp)
+                    val shape = RoundedCornerShape(17.dp)
+                    Surface(onClick = viewModel::openAddExpense, enabled = !state.submitting && !state.recognizing,
+                        modifier = Modifier.fillMaxWidth().editionRim(shape), shape = shape, color = EditionSurface) {
+                        Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(42.dp).background(palette.tagBg, RoundedCornerShape(13.dp)),
+                                contentAlignment = Alignment.Center) { Icon(Icons.Filled.Edit, null, tint = palette.brand, modifier = Modifier.size(19.dp)) }
+                            Text("手动记一笔", Modifier.weight(1f).padding(start = 10.dp), color = palette.ink,
+                                fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = palette.muted, modifier = Modifier.size(16.dp))
+                        }
                     }
                 }
                 if (state.expenses.isNotEmpty()) {
@@ -390,9 +400,9 @@ private fun OcrEntryCard(enabled: Boolean, onClick: () -> Unit) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(palette.brandTint),
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Brush.linearGradient(listOf(palette.brandTint, palette.tagBg))),
                 contentAlignment = Alignment.Center,
             ) {
                 Canvas(Modifier.size(19.dp)) {
@@ -407,7 +417,7 @@ private fun OcrEntryCard(enabled: Boolean, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.budget_ocr_title),
-                    fontSize = 13.5.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = palette.ink,
                 )
@@ -459,18 +469,17 @@ private fun LedgerCard(
     onUseEstimate: (Int) -> Unit,
 ) {
     val style = LocalJourneySeason.current.edition
-    val base = Color(0xFF212129)
     val white = Color(0xFFFDFBFA)
     val sheen = when (state.level) {
         "over" -> Color(0xFFFFA786)
         "warning" -> Color(0xFFF3BF75)
         else -> style.light
     }
-    val background = Brush.linearGradient(listOf(style.deep, base))
+    val shape = RoundedCornerShape(24.dp)
     val ratio = state.ratio.coerceIn(0.0, 1.0).toFloat()
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(21.dp)).background(background).padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxWidth().heightIn(min = 186.dp).editionRim(shape).clip(shape).inkFoil().padding(18.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -483,7 +492,7 @@ private fun LedgerCard(
                     Text(stringResource(R.string.budget_empty_sub), color = white.copy(alpha = 0.83f), fontSize = 12.sp, lineHeight = 17.sp)
                 }
             }
-            Box(Modifier.size(68.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.matchParentSize().padding(4.dp)) {
                     val stroke = Stroke(4.dp.toPx(), cap = StrokeCap.Round)
                     drawArc(white.copy(alpha = 0.23f), -90f, 360f, false, style = stroke)
@@ -506,23 +515,24 @@ private fun LedgerCard(
                 Text("按 ${state.days} 天均摊 · ${moneyText(state.remainingCents / state.days, state.currency)}/天",
                     color = white.copy(alpha = 0.84f), fontSize = 11.sp)
             }
-        } else {
-            state.estimateYuan?.takeIf { it.isFinite() && it >= 1.0 && it <= Int.MAX_VALUE }?.roundToInt()?.let { estimate ->
-                Surface(
-                    onClick = { onUseEstimate(estimate) },
-                    enabled = !state.submitting,
-                    shape = RoundedCornerShape(50), color = white.copy(alpha = 0.16f),
-                ) {
-                    Text("设为估算预算 ¥$estimate", color = white, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp))
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Surface(onClick = onEditBudget, shape = CircleShape, color = white) {
+                Box(Modifier.heightIn(min = 40.dp).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                    Text(stringResource(if (state.hasBudget) R.string.budget_edit_action else R.string.budget_set_action),
+                        color = style.deep, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
-        }
-        Surface(onClick = onEditBudget, shape = RoundedCornerShape(50), color = white) {
-            Text(
-                stringResource(if (state.hasBudget) R.string.budget_edit_action else R.string.budget_set_action),
-                color = style.deep, fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            )
+            if (!state.hasBudget) state.estimateYuan?.takeIf { it.isFinite() && it >= 1.0 && it <= Int.MAX_VALUE }
+                ?.roundToInt()?.let { estimate ->
+                    Surface(onClick = { onUseEstimate(estimate) }, enabled = !state.submitting,
+                        shape = CircleShape, color = white.copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, white.copy(alpha = 0.32f))) {
+                        Box(Modifier.heightIn(min = 40.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+                            Text("采用估算 ¥$estimate", color = white, fontSize = 12.sp)
+                        }
+                    }
+                }
         }
     }
 }
@@ -532,9 +542,8 @@ private fun CategoryCard(state: BudgetUiState) {
     val palette = LocalAppPalette.current
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, palette.border),
-        modifier = Modifier.fillMaxWidth(),
+        color = EditionSurface,
+        modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -637,9 +646,8 @@ private fun ExpenseRow(expense: BudgetExpenseUi) {
     val palette = LocalAppPalette.current
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = palette.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, palette.border),
-        modifier = Modifier.fillMaxWidth(),
+        color = EditionSurface,
+        modifier = Modifier.editionRim(RoundedCornerShape(14.dp)).fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),

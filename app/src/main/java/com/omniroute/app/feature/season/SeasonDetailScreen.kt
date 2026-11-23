@@ -1,5 +1,15 @@
 package com.omniroute.app.feature.season
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.platform.LocalConfiguration
+import com.omniroute.app.core.ui.theme.editionRim
+import com.omniroute.app.core.ui.components.SeasonArtwork
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.animation.core.animateFloatAsState
@@ -96,16 +106,11 @@ private fun SeasonChapter(
             modifier = Modifier.weight(1f).widthIn(max = ContentMaxWidth)
                 .fillMaxWidth().verticalScroll(rememberScrollState()),
         ) {
-            Box(Modifier.fillMaxWidth().height(335.dp).clipToBounds()) {
-                SeasonHeroImage(season.heroSeason())
-                Box(Modifier.matchParentSize().background(
-                    Brush.verticalGradient(
-                        0f to Color(0x660C1820),
-                        0.40f to Color.Transparent,
-                        0.66f to Color(0xC6172329),
-                        0.80f to palette.background.copy(alpha = 0.92f),
-                        1f to palette.background,
-                    ),
+            Box(Modifier.fillMaxWidth().height((LocalConfiguration.current.screenHeightDp * 0.46f).dp.coerceIn(255.dp, 410.dp)).clipToBounds()) {
+                SeasonArtwork(Modifier.matchParentSize(), season = season, cover = true)
+                Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(154.dp).background(
+                    Brush.verticalGradient(0f to Color.Transparent, 0.43f to palette.background.copy(alpha = 0.68f),
+                        0.76f to palette.background.copy(alpha = 0.97f), 1f to palette.background),
                 ))
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 10.dp),
@@ -123,9 +128,7 @@ private fun SeasonChapter(
                 }
                 Column(
                     modifier = Modifier.align(Alignment.BottomStart)
-                        .fillMaxWidth().background(Brush.verticalGradient(
-                            listOf(Color.Transparent, palette.background.copy(alpha = 0.92f)),
-                        )).padding(start = 22.dp, end = 22.dp, top = 46.dp, bottom = 7.dp),
+                        .fillMaxWidth().padding(start = 22.dp, end = 22.dp, bottom = 5.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
@@ -145,8 +148,7 @@ private fun SeasonChapter(
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 15.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.width(2.dp).height(22.dp).background(style.accent))
+                Box {
                     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         ChapterLabel(R.string.season_page_journal)
                         Text(
@@ -158,8 +160,9 @@ private fun SeasonChapter(
                     }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    ChapterLabel(R.string.season_page_palette)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.season_page_palette), color = palette.ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 9.dp), contentAlignment = Alignment.Center) {
+                        val cardWidth = (maxWidth / 2.85f).coerceAtMost(106.dp)
                         val names = when (season) {
                             JourneySeason.Spring -> listOf("樱白", "青瓷绿", "胭脂樱")
                             JourneySeason.Summer -> listOf("海盐白", "汽水橘", "琉璃蓝")
@@ -175,16 +178,18 @@ private fun SeasonChapter(
                                     clipboard?.setPrimaryClip(ClipData.newPlainText(names[index], hex))
                                     copiedIndex = index
                                 },
-                                modifier = Modifier.weight(1f).scale(scale),
+                                modifier = Modifier.offset(x = (cardWidth - 12.dp) * (index - 1), y = if (index == 1) 0.dp else 5.dp)
+                                    .width(cardWidth).rotate((index - 1) * 6f).scale(scale),
+                                shadowElevation = 7.dp,
                                 shape = RoundedCornerShape(9.dp),
-                                color = EditionSurface,
+                                color = palette.surface,
                             ) {
                                 Column(Modifier.padding(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                    Box(Modifier.fillMaxWidth().height(25.dp).clip(RoundedCornerShape(5.dp)).background(color))
+                                    Box(Modifier.fillMaxWidth().height(76.dp).clip(RoundedCornerShape(5.dp)).background(color))
                                     Text(names[index], color = palette.ink, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 3.dp))
                                     Text(
                                         hex, modifier = Modifier.padding(horizontal = 3.dp),
-                                        color = palette.ink, fontFamily = FontFamily.Monospace, fontSize = 10.sp,
+                                        color = palette.muted, fontFamily = FontFamily.Monospace, fontSize = 10.sp,
                                     )
                                 }
                             }
@@ -208,9 +213,8 @@ private fun SeasonChapter(
                 .padding(horizontal = 18.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SeasonGallery(season, onSelect)
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 50.dp).clip(CircleShape)
+                Modifier.fillMaxWidth().heightIn(min = 52.dp).shadow(6.dp, CircleShape, spotColor = style.accent).clip(CircleShape)
                     .background(style.actionGradient)
                     .clickable(role = Role.Button, onClick = onStart).padding(horizontal = 17.dp),
                 horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterHorizontally),
@@ -219,6 +223,16 @@ private fun SeasonChapter(
                 OmniSeasonLogo(diameter = 24.dp, tint = Color.White)
                 Text(stringResource(R.string.season_page_start), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Icon(Icons.Filled.ArrowForward, null, tint = Color.White, modifier = Modifier.size(17.dp))
+            }
+            Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.Center) {
+                JourneySeason.entries.forEach { option ->
+                    val selected = option == season
+                    Text(stringResource(option.labelRes), color = if (selected) palette.brand else palette.muted,
+                        fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        modifier = Modifier.clip(CircleShape).background(if (selected) palette.brandTint else Color.Transparent)
+                            .selectable(selected, role = Role.RadioButton) { onSelect(option) }
+                            .padding(horizontal = 19.dp, vertical = 6.dp))
+                }
             }
         }
     }

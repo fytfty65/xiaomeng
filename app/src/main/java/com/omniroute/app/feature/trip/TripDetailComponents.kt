@@ -1,5 +1,10 @@
 package com.omniroute.app.feature.trip
 
+import com.omniroute.app.core.ui.components.DestinationCover
+import com.omniroute.app.core.ui.theme.editionRim
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.text.font.FontFamily
 import com.omniroute.app.core.network.dto.BudgetSummaryDto
 import com.omniroute.app.core.network.dto.ExecutionSummaryDto
 import androidx.compose.material3.LinearProgressIndicator
@@ -138,7 +143,7 @@ internal fun TripTopBar(
             Column {
                 Text(
                     text = stringResource(R.string.trip_title),
-                    fontSize = 17.sp,
+                    fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink,
                 )
@@ -254,7 +259,7 @@ internal fun TripDetailHeader(
             icon = Icons.Filled.ShoppingCart,
             title = R.string.label_budget,
             subtitle = ledger?.let { "${ticketMoney(it.spentCents, it.currency)} / ${ticketMoney(it.totalBudgetCents, it.currency)}" }
-                ?: stringResource(R.string.budget_entry_sub),
+                ?: if (budgetProgress != null) "尚未设定总预算" else "查看旅行账本",
             progress = ledger?.ratio?.toFloat(),
             onClick = onOpenBudget,
             modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -270,13 +275,6 @@ internal fun TripDetailHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(4.dp, 14.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(BrandOrange),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.trip_daily_schedule),
                 fontSize = 16.sp,
@@ -333,19 +331,34 @@ private fun TripToolTile(
     onClick: () -> Unit,
     modifier: Modifier,
 ) {
-    Surface(
-        onClick = onClick, modifier = modifier, shape = RoundedCornerShape(15.dp), color = EditionSurface,
-    ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Icon(icon, null, tint = BrandOrange, modifier = Modifier.size(20.dp))
-            Text(stringResource(title), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-            Text(subtitle, fontSize = 11.sp, lineHeight = 16.sp, color = Muted)
-            progress?.takeIf(Float::isFinite)?.let { amount ->
-                LinearProgressIndicator(
-                    progress = { amount.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().height(3.dp).clip(CircleShape),
-                    color = BrandOrange, trackColor = OrangeLightBg,
-                )
+    val palette = LocalAppPalette.current
+    val style = LocalJourneySeason.current.edition
+    val journey = title == R.string.journey_open
+    val tint = if (journey) style.glow else style.secondary
+    val shape = RoundedCornerShape(18.dp)
+    Surface(onClick = onClick, modifier = modifier.editionRim(shape), shape = shape, color = EditionSurface) {
+        Column(Modifier.background(Brush.linearGradient(listOf(tint.copy(alpha = 0.26f), Color.Transparent)))
+            .padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, null, tint = palette.brand, modifier = Modifier.size(20.dp))
+                val fraction = progress?.takeIf(Float::isFinite)?.coerceIn(0f, 1f)
+                if (journey && fraction != null) {
+                    Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxSize(),
+                            strokeWidth = 3.dp, color = palette.brand, trackColor = palette.brandTint)
+                        Text("${(fraction * 100).toInt()}%", fontSize = 9.sp, color = palette.brand)
+                    }
+                } else {
+                    Icon(Icons.Filled.ArrowForward, null, tint = palette.muted, modifier = Modifier.size(15.dp))
+                }
+            }
+            Text(stringResource(title), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+            Text(subtitle, fontSize = 12.sp, lineHeight = 17.sp, color = Muted)
+            if (!journey) {
+                LinearProgressIndicator(progress = { progress?.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f },
+                    modifier = Modifier.fillMaxWidth().padding(top = 3.dp).height(6.dp).clip(CircleShape),
+                    color = palette.brand, trackColor = palette.ink.copy(alpha = 0.09f))
             }
         }
     }
@@ -361,104 +374,41 @@ private fun ticketMoney(cents: Long, code: String?): String {
 @Composable
 private fun EditorialHeroCard(trip: TripPlanDto, summary: String?) {
     val context = LocalContext.current
-    val city = trip.destCity?.trim().orEmpty()
     val style = LocalJourneySeason.current.edition
     var showSummary by rememberSaveable(trip.id) { mutableStateOf(false) }
 
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = EditionSurface,
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 6.dp,
-                shape = RoundedCornerShape(20.dp),
-                ambientColor = Color.Black.copy(alpha = 0.02f),
-                spotColor = BrandOrange.copy(alpha = 0.08f),
-            ),
-    ) {
-        Column {
-            SeasonArtwork(Modifier.fillMaxWidth().height(122.dp)) {
-                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xB517212B)))))
-                OmniSeasonLogo(Modifier.align(Alignment.TopEnd).padding(12.dp), diameter = 34.dp, tint = Color.White)
-                if (city.isNotBlank()) {
-                    Text(city, color = Color.White, fontFamily = style.titleFont, fontWeight = style.titleWeight,
-                        fontSize = 23.sp, modifier = Modifier.align(Alignment.BottomStart).padding(15.dp))
-                }
-            }
-        Column(modifier = Modifier.padding(15.dp)) {
-            // 行程大标题
-            Text(
-                text = tripTitle(context, trip),
-                fontSize = 22.sp,
-                fontFamily = style.titleFont,
-                fontWeight = style.titleWeight,
-                lineHeight = 30.sp,
-                color = Ink,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 核心属性微标行
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                if (trip.days > 0) {
-                    PropertyTag(
-                        label = stringResource(R.string.trip_meta_days),
-                        value = stringResource(R.string.trip_meta_days_value, trip.days),
-                    )
-                }
-                if (trip.travelers > 0) {
-                    PropertyTag(
-                        label = stringResource(R.string.trip_meta_travelers),
-                        value = stringResource(R.string.trip_meta_travelers_value, trip.travelers),
-                    )
-                }
+    val shape = RoundedCornerShape(24.dp)
+    DestinationCover(trip.destCity, trip.content.orEmpty().contains("天池"), Modifier.fillMaxWidth().editionRim(shape).clip(shape)) {
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+            0f to Color.Transparent, 0.30f to Color.Transparent, 0.75f to Color(0x75151D29), 1f to Color(0xD4181D2B))))
+        Column(Modifier.fillMaxWidth().heightIn(min = 210.dp).padding(18.dp), verticalArrangement = Arrangement.Bottom) {
+            Text(tripTitle(context, trip), color = Color.White, fontSize = 27.sp, lineHeight = 34.sp,
+                fontFamily = style.titleFont, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 val date = trip.createdAt?.take(10).orEmpty()
-                if (date.length == 10) {
-                    PropertyTag(
-                        label = stringResource(R.string.trip_meta_archived),
-                        value = date.replace("-", "."),
-                    )
-                }
+                val tags = listOfNotNull(
+                    if (trip.days > 0) stringResource(R.string.trip_meta_days_value, trip.days) else null,
+                    if (trip.travelers > 0) stringResource(R.string.trip_meta_travelers_value, trip.travelers) else null,
+                    if (date.length == 10) "${date.replace('-', '.')} 归档" else null)
+                tags.forEach { Text(it, color = Color.White, fontSize = 11.sp, modifier = Modifier.clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.19f)).padding(horizontal = 9.dp, vertical = 4.dp)) }
             }
-
-            if (!summary.isNullOrBlank()) {
-                Spacer(Modifier.height(10.dp))
-                Text(summary, color = Muted, lineHeight = 19.sp, fontSize = 12.5.sp,
-                    maxLines = if (showSummary) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis)
-                TextButton(onClick = { showSummary = !showSummary }) {
-                    Text(if (showSummary) "收起路书导语" else "展开路书导语", fontSize = 12.sp)
-                }
-            }
-        }
         }
     }
-}
-
-@Composable
-private fun PropertyTag(label: String, value: String) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = TagBg,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "$label ",
-                fontSize = 12.sp,
-                color = Muted,
-            )
-            Text(
-                text = value,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Ink,
-            )
+    if (!summary.isNullOrBlank()) {
+        Spacer(Modifier.height(10.dp))
+        val note = RoundedCornerShape(16.dp)
+        Surface(onClick = { showSummary = !showSummary }, modifier = Modifier.fillMaxWidth().editionRim(note),
+            shape = note, color = EditionSurface) {
+            Column(Modifier.padding(horizontal = 15.dp, vertical = 11.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("路书导语", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text(if (showSummary) "收起  −" else "展开  +", color = BrandOrange, fontSize = 12.sp)
+                }
+                Text(summary, color = Muted, lineHeight = 19.sp, fontSize = 12.sp,
+                    maxLines = if (showSummary) Int.MAX_VALUE else 1, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }

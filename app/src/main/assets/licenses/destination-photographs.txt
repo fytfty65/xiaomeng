@@ -1,0 +1,20 @@
+Photographs bundled in the Android application
+
+destination_tianchi.webp
+Tianchi Lake, Bernard Gagnon
+https://commons.wikimedia.org/wiki/File:Tianchi_Lake.jpg
+CC BY-SA 3.0 — https://creativecommons.org/licenses/by-sa/3.0/
+
+destination_urumqi.webp
+Urumqi Skyline July 2019, Albertaont
+https://commons.wikimedia.org/wiki/File:Urumqi_Skyline_July_2019.jpg
+CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/
+
+destination_qingdao.webp
+Zhanqiao pier with Little Qingdao Isle, K.Y.K.Z.K.
+https://commons.wikimedia.org/wiki/File:Zhanqiao_pier_with_Little_Qingdao_Isle.jpg
+CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/
+
+These WebP renditions were resized and re-encoded from the originals and
+are distributed under their respective licenses. The application crops
+the images to the available display area and overlays interface elements.

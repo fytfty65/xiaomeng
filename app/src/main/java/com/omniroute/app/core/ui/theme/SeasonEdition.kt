@@ -1,5 +1,10 @@
 package com.omniroute.app.core.ui.theme
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.font.Font
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +43,7 @@ import com.omniroute.app.R
 internal data class SeasonEdition(
     val accent: Color,
     val secondary: Color,
+    val glow: Color,
     val light: Color,
     val deep: Color,
     val paper: Color,
@@ -46,30 +52,30 @@ internal data class SeasonEdition(
     val titleFont: FontFamily,
     val titleWeight: FontWeight,
 ) {
-    val actionGradient: Brush get() = Brush.horizontalGradient(listOf(deep, lerp(deep, accent, 0.32f)))
+    val actionGradient: Brush get() = Brush.linearGradient(listOf(light, accent))
 }
 
 private val editionStyles = JourneySeason.entries.associateWith { season ->
     when (season) {
         JourneySeason.Spring -> SeasonEdition(
-            Color(0xFFD46A84), Color(0xFF5E9E88), Color(0xFFE88DA4), Color(0xFF973B57),
-            Color(0xFFFBF8F9), R.drawable.pass_window_spring, R.drawable.pass_background_spring,
-            FontFamily.Serif, FontWeight.Medium,
+            Color(0xFFD94B70), Color(0xFF8CE0C8), Color(0xFFFF9EB8), Color(0xFFF06A8A), Color(0xFFC93E63),
+            Color(0xFFFDF7F9), R.drawable.pass_window_spring, R.drawable.pass_background_spring,
+            FontFamily(Font(R.font.omni_serif_medium)), FontWeight.SemiBold,
         )
         JourneySeason.Summer -> SeasonEdition(
-            Color(0xFF0E86A8), Color(0xFFFF8552), Color(0xFF22B2D4), Color(0xFF075B77),
-            Color(0xFFF2F9FC), R.drawable.pass_window_summer, R.drawable.pass_background_summer,
+            Color(0xFF0D7FA6), Color(0xFFFFB978), Color(0xFF52C7EA), Color(0xFF1BA9CE), Color(0xFF0A6C8F),
+            Color(0xFFF2FAFD), R.drawable.pass_window_summer, R.drawable.pass_background_summer,
             FontFamily.SansSerif, FontWeight.Bold,
         )
         JourneySeason.Autumn -> SeasonEdition(
-            Color(0xFFB85D3B), Color(0xFFD99B43), Color(0xFFD4724A), Color(0xFF873A20),
-            Color(0xFFFAF5EE), R.drawable.pass_window_autumn, R.drawable.pass_background_autumn,
-            FontFamily.Serif, FontWeight.SemiBold,
+            Color(0xFFB54B27), Color(0xFFEBC773), Color(0xFFF29F67), Color(0xFFD96F43), Color(0xFFA33F1E),
+            Color(0xFFFBF5EE), R.drawable.pass_window_autumn, R.drawable.pass_background_autumn,
+            FontFamily(Font(R.font.omni_serif_medium)), FontWeight.SemiBold,
         )
         JourneySeason.Winter -> SeasonEdition(
-            Color(0xFF6B53A6), Color(0xFF88A6DB), Color(0xFF8268C4), Color(0xFF533B8F),
-            Color(0xFFF6F5FC), R.drawable.pass_window_winter, R.drawable.pass_background_winter,
-            FontFamily.SansSerif, FontWeight.Light,
+            Color(0xFF573F9C), Color(0xFF7AB8F5), Color(0xFF9683EC), Color(0xFF7F66C9), Color(0xFF4C358F),
+            Color(0xFFF4F3FB), R.drawable.pass_window_winter, R.drawable.pass_background_winter,
+            FontFamily.SansSerif, FontWeight.Medium,
         )
     }
 
@@ -83,7 +89,7 @@ internal fun SeasonEditionTheme(season: JourneySeason, content: @Composable () -
     val dark = isSystemInDarkTheme()
     val base = season.palette(dark)
     val tintedPaper = if (dark) lerp(base.background, style.deep, 0.15f) else style.paper
-    val surface = if (dark) lerp(base.surface, style.deep, 0.14f) else Color(0xFFFFFEFC)
+    val surface = if (dark) lerp(base.surface, style.deep, 0.14f) else Color.White
     val ink = if (dark) base.ink else lerp(Color(0xFF211E20), style.deep, 0.12f)
     val accent = if (dark) lerp(style.light, Color.White, 0.55f) else style.deep
     val palette = base.copy(
@@ -91,6 +97,7 @@ internal fun SeasonEditionTheme(season: JourneySeason, content: @Composable () -
         brandDark = accent,
         brandLight = style.light,
         ink = ink,
+        muted = if (dark) base.muted else Color(0xFF686573),
         background = tintedPaper,
         surface = surface,
         fieldBg = lerp(tintedPaper, style.accent, if (dark) 0.13f else 0.065f),
@@ -134,16 +141,18 @@ internal fun Modifier.seasonBackdrop(): Modifier = composed {
     )
     drawWithCache {
         val warm = Brush.radialGradient(
-            listOf(style.accent.copy(alpha = 0.18f), Color.Transparent),
+            listOf(style.glow.copy(alpha = 0.34f), Color.Transparent),
             center = Offset(size.width * 0.04f, size.height * 0.10f),
             radius = size.width.coerceAtLeast(1f) * 0.86f,
         )
         val cool = Brush.radialGradient(
-            listOf(style.secondary.copy(alpha = 0.17f), Color.Transparent),
-            center = Offset(size.width * 0.91f, size.height * 0.22f),
+            listOf(style.secondary.copy(alpha = 0.28f), Color.Transparent),
+            center = Offset(size.width * 0.91f, size.height * 0.13f),
             radius = size.width.coerceAtLeast(1f) * 0.76f,
         )
-        val marks = List(15) { index ->
+        val bottomLight = Brush.radialGradient(listOf(style.glow.copy(alpha = 0.17f), Color.Transparent),
+            center = Offset(size.width * 0.87f, size.height * 0.91f), radius = size.width.coerceAtLeast(1f) * 0.80f)
+        val marks = List(5) { index ->
             Offset(
                 size.width * ((index * 47 + 11) % 100) / 100f,
                 size.height * ((index * 29 + 7) % 70) / 100f,
@@ -154,6 +163,7 @@ internal fun Modifier.seasonBackdrop(): Modifier = composed {
             drawRect(palette.background)
             drawRect(warm)
             drawRect(cool)
+            drawRect(bottomLight)
             marks.forEachIndexed { index, anchor ->
                 val y = if (season == JourneySeason.Autumn) 0f else drift * (14.dp.toPx() + index)
                 val point = anchor + Offset(y * 0.45f, y)
@@ -176,7 +186,36 @@ internal fun Modifier.seasonBackdrop(): Modifier = composed {
 }
 
 internal val EditionSurface: Color
-    @Composable get() = LocalAppPalette.current.surface.copy(alpha = 0.86f)
+    @Composable get() = LocalAppPalette.current.surface.copy(alpha = 0.80f)
+
+/** A colored shadow and a directional rim leave the page light visible through the glass. */
+internal fun Modifier.editionRim(shape: Shape = RoundedCornerShape(22.dp)): Modifier = composed {
+    val style = LocalJourneySeason.current.edition
+    val rim = if (isSystemInDarkTheme()) 0.26f else 0.98f
+    shadow(8.dp, shape, clip = false, ambientColor = style.glow.copy(alpha = 0.22f),
+        spotColor = style.accent.copy(alpha = 0.21f))
+        .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = rim),
+            Color.White.copy(alpha = rim * 0.20f))), shape)
+}
+
+internal fun Modifier.inkFoil(): Modifier = composed {
+    val style = LocalJourneySeason.current.edition
+    drawWithCache {
+        val end = lerp(style.deep, Color(0xFF18182E), 0.56f)
+        val ground = Brush.linearGradient(listOf(style.deep, lerp(style.deep, end, 0.55f), end))
+        val center = Offset(size.width * 0.91f, size.height * 0.06f)
+        val halo = Brush.radialGradient(listOf(style.secondary.copy(alpha = 0.40f), Color.Transparent),
+            center, size.width.coerceAtLeast(1f) * 0.60f)
+        onDrawBehind {
+            drawRect(ground)
+            drawRect(halo)
+            repeat(3) { ring ->
+                drawCircle(Color.White.copy(alpha = 0.09f), size.width * (0.24f + ring * 0.085f),
+                    center, style = Stroke(0.7.dp.toPx()))
+            }
+        }
+    }
+}
 
 @Composable
 internal fun OmniSeasonLogo(
@@ -207,7 +246,7 @@ internal fun OmniSeasonLogo(
                     cubicTo(25 * unit, 3 * unit, 35 * unit, 2 * unit, 37 * unit, 8 * unit)
                     cubicTo(37 * unit, 13 * unit, 30 * unit, 16 * unit, 24 * unit, 14 * unit)
                     close()
-                }, symbol.copy(alpha = 0.85f))
+                }, symbol.copy(alpha = symbol.alpha * 0.85f))
                 drawCircle(line, radius = unit * 2, center = p(18f, 22f))
             }
             JourneySeason.Summer -> {

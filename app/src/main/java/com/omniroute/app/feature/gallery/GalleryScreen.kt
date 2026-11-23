@@ -1,5 +1,8 @@
 package com.omniroute.app.feature.gallery
 
+import androidx.compose.ui.BiasAlignment
+import androidx.compose.foundation.shape.CircleShape
+import com.omniroute.app.core.ui.theme.editionRim
 import com.omniroute.app.core.ui.SystemBarIcons
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.alpha
@@ -199,7 +202,7 @@ private fun GalleryContent(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.gallery_title),
-                    fontSize = 18.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     color = palette.ink,
                 )
@@ -274,24 +277,29 @@ private fun GalleryContent(
 private fun GalleryEmpty(enabled: Boolean, onPick: () -> Unit) {
     val palette = LocalAppPalette.current
     val style = LocalJourneySeason.current.edition
-    Box(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(11.dp)) {
-            Box(Modifier.widthIn(max = 288.dp).fillMaxWidth().height(168.dp), contentAlignment = Alignment.Center) {
-                listOf(-15f, 13f, -3f).forEachIndexed { index, angle ->
+    Box(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentAlignment = BiasAlignment(0f, -0.20f)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.widthIn(max = 280.dp).fillMaxWidth().height(195.dp), contentAlignment = Alignment.Center) {
+                listOf(-16f, 14f, -4f).forEachIndexed { index, angle ->
                     val alignment = listOf(Alignment.CenterStart, Alignment.CenterEnd, Alignment.Center)[index]
-                    Surface(
-                        modifier = Modifier.align(alignment).rotate(angle).width(116.dp),
-                        shape = RoundedCornerShape(7.dp), color = palette.surface, shadowElevation = 6.dp,
-                    ) {
-                        Column(Modifier.padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 20.dp)) {
-                            SeasonArtwork(Modifier.fillMaxWidth().height(104.dp).clip(RoundedCornerShape(4.dp)), portrait = index == 2)
+                    Surface(modifier = Modifier.align(alignment).rotate(angle).width(if (index == 2) 138.dp else 117.dp),
+                        shape = RoundedCornerShape(4.dp), color = Color.White, shadowElevation = 11.dp) {
+                        Column(Modifier.padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 17.dp)) {
+                            SeasonArtwork(Modifier.fillMaxWidth().height(if (index == 2) 133.dp else 110.dp),
+                                portrait = index == 1, cover = index == 2)
                         }
                     }
                 }
             }
-            Text("第一帧旅途光影", fontFamily = style.titleFont, fontWeight = style.titleWeight, color = palette.ink, fontSize = 24.sp)
+            Text("第一帧旅途光影", fontFamily = style.titleFont, fontWeight = FontWeight.SemiBold, color = palette.ink, fontSize = 28.sp)
             Text(stringResource(R.string.gallery_empty), color = palette.muted, textAlign = TextAlign.Center, fontSize = 13.sp)
-            if (enabled) AddButton(onClick = onPick)
+            if (enabled) {
+                Box(Modifier.editionRim(CircleShape).clip(CircleShape).background(style.actionGradient)
+                    .clickable(role = Role.Button, onClick = onPick).padding(horizontal = 22.dp, vertical = 13.dp),
+                    contentAlignment = Alignment.Center) {
+                    Text("＋  上传第一张实拍", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+            }
         }
     }
 }

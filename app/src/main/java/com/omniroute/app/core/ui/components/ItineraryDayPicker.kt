@@ -1,5 +1,13 @@
 package com.omniroute.app.core.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.semantics.Role
+import com.omniroute.app.core.ui.theme.LocalAppPalette
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -20,15 +28,16 @@ internal fun ItineraryDayPicker(
     onSelect: (Int?) -> Unit,
     overview: Boolean = false,
 ) {
-    Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-    ) {
-        if (overview) {
-            FilterChip(selected == null, onClick = { onSelect(null) }, label = { Text("总览", fontSize = 12.sp) })
-        }
-        days.forEach { day ->
-            FilterChip(selected == day, onClick = { onSelect(day) }, label = { Text("第 ${day} 天", fontSize = 12.sp) })
+    val palette = LocalAppPalette.current
+    Row(Modifier.horizontalScroll(rememberScrollState()).clip(CircleShape).background(palette.brandTint)
+        .selectableGroup().padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        val options = if (overview) listOf(null) + days else days
+        options.forEach { day ->
+            val active = selected == day
+            val tile = if (active) Modifier.shadow(2.dp, CircleShape).background(palette.surface, CircleShape) else Modifier
+            Text(day?.let { "第 ${it} 天" } ?: "总览", fontSize = 12.sp, color = if (active) palette.brand else palette.muted,
+                modifier = tile.clip(CircleShape).selectable(active, role = Role.Tab) { onSelect(day) }
+                    .padding(horizontal = 13.dp, vertical = 8.dp))
         }
     }
 }

@@ -487,9 +487,9 @@
     <string name="profile_trips_count_error">行程数量加载失败，点此重试</string>
     <string name="profile_trips_sub">查看历史路书，支持重命名与删除</string>
     <string name="profile_risk_title">风险通知</string>
-    <string name="profile_risk_sub">目的地风险变更与出行提醒</string>
+    <string name="profile_risk_sub">目的地出行提醒</string>
     <string name="profile_room_title">协作房间</string>
-    <string name="profile_room_sub">邀请同行者实时同步行程</string>
+    <string name="profile_room_sub">和同行者共创路书</string>
     <string name="profile_section_account">账号信息</string>
     <string name="profile_section_season">季节氛围</string>
     <string name="profile_season_hint">切换季节会同步更换全局配色，不影响行程内容。</string>
@@ -867,11 +867,11 @@
 
     <!-- 我的相册 -->
     <string name="profile_gallery">我的相册</string>
-    <string name="profile_gallery_sub">上传旅行实拍，审核通过后公开</string>
+    <string name="profile_gallery_sub">收藏旅途实拍</string>
     <string name="gallery_title">我的相册</string>
     <string name="gallery_sub">实拍照片仅在审核通过后公开</string>
     <string name="gallery_add">上传</string>
-    <string name="gallery_empty">还没有照片，上传第一张旅行实拍吧</string>
+    <string name="gallery_empty">把一路见到的风景留在这里。</string>
     <string name="gallery_disabled">服务端已关闭照片上传，当前只能查看已有照片</string>
     <string name="gallery_untitled">未命名地点</string>
     <string name="gallery_close">关闭</string>

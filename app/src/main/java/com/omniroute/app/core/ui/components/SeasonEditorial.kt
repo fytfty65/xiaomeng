@@ -1,5 +1,9 @@
 package com.omniroute.app.core.ui.components
 
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.shape.CircleShape
+import com.omniroute.app.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,11 +43,21 @@ internal fun SeasonArtwork(
     modifier: Modifier = Modifier,
     season: JourneySeason = LocalJourneySeason.current,
     portrait: Boolean = false,
+    cover: Boolean = false,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     Box(modifier) {
         Image(
-            painter = painterResource(if (portrait) season.edition.portrait else season.edition.image),
+            painter = painterResource(when {
+                cover -> when (season) {
+                    JourneySeason.Spring -> R.drawable.pass_cover_spring
+                    JourneySeason.Summer -> R.drawable.pass_cover_summer
+                    JourneySeason.Autumn -> R.drawable.pass_cover_autumn
+                    JourneySeason.Winter -> R.drawable.pass_cover_winter
+                }
+                portrait -> season.edition.portrait
+                else -> season.edition.image
+            }),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.matchParentSize(),
@@ -61,28 +75,28 @@ internal fun SeasonGallery(
     val palette = LocalAppPalette.current
     Row(modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         JourneySeason.entries.forEach { season ->
-            val shape = RoundedCornerShape(12.dp)
+            val shape = RoundedCornerShape(16.dp)
             val active = season == selected
             SeasonArtwork(
-                modifier = Modifier.weight(1f).heightIn(min = 62.dp).clip(shape)
+                modifier = Modifier.weight(1f).heightIn(min = 84.dp).aspectRatio(0.86f).shadow(if (active) 7.dp else 1.dp, shape, spotColor = palette.brand).clip(shape)
                     .border(if (active) 2.dp else 1.dp, if (active) palette.brand else palette.border, shape)
                     .selectable(active, role = Role.RadioButton) { onSelect(season) },
-                season = season,
+                season = season, cover = true,
             ) {
                 Box(Modifier.matchParentSize().background(
                     Brush.verticalGradient(listOf(Color.Transparent, Color(0xB3192025))),
                 ))
-                OmniSeasonLogo(
+                if (active) OmniSeasonLogo(
                     modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
                     season = season,
                     diameter = 20.dp,
-                    tint = if (season == JourneySeason.Winter) Color.White else season.edition.deep,
+                    tint = Color.White,
                 )
                 Text(
                     stringResource(season.labelRes),
-                    modifier = Modifier.align(Alignment.BottomStart).padding(horizontal = 8.dp, vertical = 5.dp),
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 8.dp, vertical = 9.dp),
                     color = Color.White,
-                    fontSize = 14.sp,
+                    fontSize = 21.sp, fontFamily = season.edition.titleFont,
                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
                 )
             }

@@ -1,5 +1,9 @@
 package com.omniroute.app.feature.trip
 
+import com.omniroute.app.core.ui.theme.inkFoil
+import com.omniroute.app.core.ui.theme.editionRim
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -146,7 +150,7 @@ fun JourneyScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.journey_title),
-                        fontSize = 18.sp,
+                        fontSize = 25.sp,
                         fontWeight = FontWeight.Bold,
                         color = palette.ink,
                     )
@@ -207,7 +211,7 @@ fun JourneyScreen(
             }
         }
 
-        item(key = "progress") {
+        if (next == null) item(key = "progress") {
             ProgressCard(
                 phase = state.phase,
                 progress = state.progress,
@@ -220,24 +224,38 @@ fun JourneyScreen(
             item(key = "focus") {
                 val style = LocalJourneySeason.current.edition
                 val context = LocalContext.current
-                Surface(shape = RoundedCornerShape(18.dp), color = EditionSurface) {
-                    Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("下一站 · 第 ${next.day} 天", color = palette.brand, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            OmniSeasonLogo(diameter = 24.dp)
+                val shape = RoundedCornerShape(24.dp)
+                Column(Modifier.fillMaxWidth().editionRim(shape).clip(shape).inkFoil().padding(19.dp),
+                    verticalArrangement = Arrangement.spacedBy(15.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            Text("NEXT STOP   /   第 ${next.day} 天", color = Color.White.copy(alpha = 0.87f),
+                                fontFamily = FontFamily.Monospace, fontSize = 11.sp, letterSpacing = 1.sp)
+                            Text(next.name, color = Color.White, fontFamily = style.titleFont, fontWeight = FontWeight.Bold,
+                                fontSize = 27.sp, lineHeight = 34.sp)
+                            Text("${phaseLabel(state.phase)}   ·   ${state.completed} / ${state.total} 站",
+                                color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
                         }
-                        Text(next.name, color = palette.ink, fontFamily = style.titleFont, fontWeight = style.titleWeight, fontSize = 24.sp)
-                        PrimaryAction(
-                            text = "到达并打卡",
-                            enabled = state.updatingNodeKey == null,
-                            onClick = { viewModel.updateStatus(next, "visited") },
-                        )
-                        TextButton(onClick = {
-                            val query = listOf(state.destination, next.name).filter { it.isNotBlank() }.distinct().joinToString(" ")
-                            if (!searchMap(context, query)) {
-                                Toast.makeText(context, R.string.trip_navigate_error, Toast.LENGTH_SHORT).show()
+                        Box(Modifier.size(58.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(progress = { state.progress.coerceIn(0, 100) / 100f },
+                                modifier = Modifier.fillMaxSize().padding(3.dp), strokeWidth = 4.dp,
+                                color = Color.White, trackColor = Color.White.copy(alpha = 0.23f))
+                            Text("${state.progress}%", color = Color.White, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                        Surface(onClick = { viewModel.updateStatus(next, "visited") }, enabled = state.updatingNodeKey == null,
+                            modifier = Modifier.weight(1.6f), shape = CircleShape, color = Color.White) {
+                            Box(Modifier.heightIn(min = 44.dp), contentAlignment = Alignment.Center) {
+                                Text("到达并打卡", color = style.deep, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
-                        }) { Text("在地图中查看") }
+                        }
+                        Surface(onClick = {
+                            val query = listOf(state.destination, next.name).filter { it.isNotBlank() }.distinct().joinToString(" ")
+                            if (!searchMap(context, query)) Toast.makeText(context, R.string.trip_navigate_error, Toast.LENGTH_SHORT).show()
+                        }, modifier = Modifier.weight(1f), shape = CircleShape, color = Color.White.copy(alpha = 0.17f)) {
+                            Box(Modifier.heightIn(min = 44.dp), contentAlignment = Alignment.Center) { Text("导航", color = Color.White) }
+                        }
                     }
                 }
             }
@@ -426,7 +444,7 @@ private fun ProgressCard(phase: String, progress: Int, completed: Int, total: In
     val palette = LocalAppPalette.current
     val style = LocalJourneySeason.current.edition
     val fraction = progress.coerceIn(0, 100) / 100f
-    Surface(shape = RoundedCornerShape(19.dp), color = EditionSurface, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = RoundedCornerShape(19.dp), color = EditionSurface, modifier = Modifier.editionRim(RoundedCornerShape(19.dp)).fillMaxWidth()) {
         Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(13.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(59.dp), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.matchParentSize().padding(5.dp)) {
@@ -508,9 +526,9 @@ private fun CandidateCard(
     val palette = LocalAppPalette.current
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.surface,
+        color = EditionSurface,
         border = BorderStroke(1.dp, palette.border),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -563,7 +581,7 @@ private fun NodeCard(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = EditionSurface,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -574,17 +592,21 @@ private fun NodeCard(
                     text = node.name,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = palette.ink,
+                    color = palette.ink.copy(alpha = if (complete) 0.60f else 1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 if (node.status == "visited") {
-                    OmniSeasonLogo(diameter = 18.dp)
+                    OmniSeasonLogo(Modifier.rotate(-8f), diameter = 18.dp)
                     Spacer(Modifier.width(4.dp))
                 }
-                StatusChip(status = node.status)
+                if (node.status == "visited") {
+                    Text("已打卡", color = palette.verifiedFg, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.rotate(-8f).background(palette.verifiedBg, RoundedCornerShape(5.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp))
+                } else StatusChip(status = node.status)
                 if (!complete) {
                     Text(if (expanded) " −" else " +", color = palette.brand)
                 }
@@ -807,9 +829,9 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
     val palette = LocalAppPalette.current
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.surface,
+        color = EditionSurface,
         border = BorderStroke(1.dp, palette.border),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

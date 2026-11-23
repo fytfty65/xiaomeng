@@ -1,5 +1,11 @@
 package com.omniroute.app.feature.notify
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.foundation.layout.heightIn
+import com.omniroute.app.core.ui.theme.editionRim
 import com.omniroute.app.core.ui.theme.EditionSurface
 import com.omniroute.app.core.ui.theme.OmniSeasonLogo
 import androidx.compose.material3.TextButton
@@ -106,13 +112,11 @@ private fun RiskPushCard(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = EditionSurface,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = CircleShape, color = InfoBg) {
-                    OmniSeasonLogo(modifier = Modifier.padding(8.dp), diameter = 30.dp, tint = InfoFg)
-                }
+                GuardBadge(Modifier.size(55.dp))
                 Spacer(Modifier.width(9.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -136,15 +140,18 @@ private fun RiskPushCard(
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = if (cities.isEmpty()) {
-                    stringResource(R.string.notify_push_no_city)
-                } else {
-                    stringResource(R.string.notify_push_cities, cities.joinToString(" · "))
-                },
-                fontSize = 11.5.sp,
-                color = Muted,
-            )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(if (cities.isEmpty()) stringResource(R.string.notify_push_no_city)
+                    else stringResource(R.string.notify_push_cities, cities.joinToString(" · ")),
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(InfoBg)
+                        .padding(horizontal = 9.dp, vertical = 6.dp), fontSize = 12.sp, color = InfoFg)
+                Surface(onClick = onCheck, enabled = !busy, shape = CircleShape, color = Color.Transparent,
+                    border = BorderStroke(1.dp, BrandOrange.copy(alpha = 0.46f))) {
+                    Text(stringResource(R.string.notify_push_check), color = BrandOrange,
+                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp), fontSize = 12.sp)
+                }
+            }
             if (cities.isEmpty()) {
                 TextButton(onClick = onStartPlanning) {
                     Text("规划一份行程，开启守护", fontSize = 12.sp)
@@ -167,12 +174,7 @@ private fun RiskPushCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = message, fontSize = 11.5.sp, color = BrandOrange)
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Surface(shape = RoundedCornerShape(11.dp), color = LocalAppPalette.current.brandTint) {
-                TextButton(onClick = onCheck, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.notify_push_check), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
-            }
+
         }
     }
 }
@@ -247,7 +249,7 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = stringResource(R.string.notify_title),
-                        fontSize = 17.sp,
+                        fontSize = 25.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink,
                     )
@@ -346,9 +348,8 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
                         state.loading && state.items.isEmpty() -> item(key = "notify_loading") {
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = CardBg,
-                                border = BorderStroke(1.dp, CardBorder),
-                                modifier = Modifier.fillMaxWidth(),
+                                color = EditionSurface,
+                                modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -375,9 +376,8 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
                         visible.isEmpty() -> item(key = "notify_empty") {
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = CardBg,
-                                border = BorderStroke(1.dp, CardBorder),
-                                modifier = Modifier.fillMaxWidth(),
+                                color = EditionSurface,
+                                modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
                             ) {
                                 Column(
                                     modifier = Modifier
@@ -385,20 +385,7 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
                                         .padding(horizontal = 18.dp, vertical = 28.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(InfoBg),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Check,
-                                            contentDescription = null,
-                                            tint = InfoFg,
-                                            modifier = Modifier.size(20.dp),
-                                        )
-                                    }
+                                    GuardBadge(Modifier.size(68.dp))
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
                                         text = stringResource(
@@ -478,9 +465,9 @@ private fun RiskCard(
     val accent = severityColor(item.severity)
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = CardBg,
+        color = EditionSurface,
         border = BorderStroke(1.dp, if (item.isUnread) accent.copy(alpha = 0.35f) else CardBorder),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -613,5 +600,29 @@ private fun RiskCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GuardBadge(modifier: Modifier) {
+    val ink = InfoFg
+    Canvas(modifier) {
+        val u = size.minDimension / 56f
+        drawCircle(ink.copy(alpha = 0.07f))
+        drawCircle(Brush.linearGradient(listOf(ink.copy(alpha = 0.20f), ink.copy(alpha = 0.08f))), radius = 22*u)
+        val shield = Path().apply {
+            moveTo(28*u, 15*u)
+            quadraticTo(33*u, 19*u, 38*u, 19*u)
+            lineTo(38*u, 27*u)
+            quadraticTo(38*u, 34*u, 28*u, 40*u)
+            quadraticTo(18*u, 34*u, 18*u, 27*u)
+            lineTo(18*u, 19*u)
+            quadraticTo(23*u, 19*u, 28*u, 15*u)
+            close()
+        }
+        drawPath(shield, ink.copy(alpha = 0.13f))
+        drawPath(shield, ink, style = Stroke(1.7f*u))
+        val check = Path().apply { moveTo(23*u, 27*u); lineTo(27*u, 31*u); lineTo(33*u, 24*u) }
+        drawPath(check, ink, style = Stroke(2*u))
     }
 }

@@ -1,5 +1,7 @@
 package com.omniroute.app.core.ui.components
 
+import com.omniroute.app.core.ui.theme.editionRim
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
@@ -59,7 +61,7 @@ fun ItineraryDayCard(
         shape = RoundedCornerShape(14.dp),
         // 跟随主题语义面底，深色模式下不再出现刺眼的白卡。
         color = EditionSurface,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.editionRim(RoundedCornerShape(14.dp)).fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -120,9 +122,8 @@ fun ItineraryDayCard(
             val track = BrandOrange
             Column(Modifier.fillMaxWidth().padding(top = 8.dp).drawBehind {
                 drawLine(
-                    track.copy(alpha = 0.28f), Offset(5.dp.toPx(), 10.dp.toPx()),
-                    Offset(5.dp.toPx(), size.height - 9.dp.toPx()), 1.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())),
+                    Brush.verticalGradient(listOf(track, track.copy(alpha = 0.18f))), Offset(5.dp.toPx(), 10.dp.toPx()),
+                    Offset(5.dp.toPx(), size.height - 9.dp.toPx()), 2.dp.toPx(),
                 )
             }) {
                 day.items.forEach { item ->
@@ -161,14 +162,20 @@ private fun ItineraryItemRow(
     ) {
         val type = item.type?.takeIf { it.isNotBlank() }
         if (type != null) {
+            val tint = when (type) {
+                "餐饮" -> Color(0xFF9B571C)
+                "住宿" -> Color(0xFF76569C)
+                "景点" -> Color(0xFF356C93)
+                else -> BrandOrange
+            }
             Text(
                 text = type,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
-                color = BrandOrange,
+                color = if (androidx.compose.foundation.isSystemInDarkTheme()) Ink else tint,
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(LocalAppPalette.current.brandTint)
+                    .background(tint.copy(alpha = 0.12f))
                     .padding(horizontal = 6.dp, vertical = 3.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -218,6 +225,10 @@ private fun ItineraryItemRow(
                 )
             }
         }
+        item.priceLabel?.let { label ->
+            Text(label, fontSize = 12.sp, color = Ink, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 5.dp))
+        }
         if (onItemClick != null) {
             Spacer(modifier = Modifier.width(6.dp))
             Text(text = "›", fontSize = 16.sp, color = Muted)
@@ -229,10 +240,6 @@ private fun buildItemMeta(context: Context, item: TripItinerary.Item): List<Stri
     val parts = mutableListOf<String>()
     if (item.durationMinutes > 0) {
         parts.add(formatDuration(context, item.durationMinutes))
-    }
-    val priceLabel = item.priceLabel
-    if (priceLabel != null) {
-        parts.add(priceLabel)
     }
     return parts
 }
