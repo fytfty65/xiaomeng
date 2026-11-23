@@ -28,7 +28,7 @@
     <string name="plan_error_no_result">没有收到可用的行程结果，请重试</string>
 
     <!-- 底部操作栏 -->
-    <string name="plan_start">启动 AI 协作规划</string>
+    <string name="plan_start">生成行程方案</string>
     <string name="plan_creating_room">正在创建协作房间…</string>
     <string name="plan_stop">终止推演</string>
     <string name="plan_back_to_edit">返回修改</string>
@@ -102,8 +102,8 @@
     <string name="plan_parsed_prefs">偏好 %1$s</string>
     <string name="plan_parsed_start">出发 %1$s</string>
     <string name="plan_parsed_separator"> · </string>
-    <string name="plan_form_engine_title">OmniRoute 决策引擎</string>
-    <string name="plan_form_engine_subtitle">填写目的地与偏好，多智能体协同推演最舒适行程</string>
+    <string name="plan_form_engine_title">从一个想法出发</string>
+    <string name="plan_form_engine_subtitle">写下旅途灵感，或直接填写行程。</string>
     <string name="plan_form_section_route">目的地与出发地</string>
     <string name="plan_form_destination_label">目的地</string>
     <string name="plan_form_destination_hint">想去哪儿？例如：新疆、成都、京都</string>
@@ -122,7 +122,7 @@
     <string name="plan_form_room_hint">当前协作房间「%1$s」· 邀请码 %2$s，同伴加入后推演成员会实时同步</string>
     <string name="plan_form_clear">清除</string>
     <string name="plan_form_date_label">出发日期</string>
-    <string name="plan_form_date_hint">2026-11-05（选填）</string>
+    <string name="plan_form_date_hint">选择出发日期（选填）</string>
     <string name="plan_form_budget_label">总预算</string>
     <string name="plan_form_budget_hint">不填则不设预算上限（元）</string>
     <string name="plan_form_budget_unit">元</string>
@@ -237,13 +237,14 @@
     <string name="home_greeting_evening">晚上好</string>
     <string name="home_reload_profile">重新加载个人资料</string>
     <string name="home_my_trips">我的行程</string>
-    <string name="home_engine_subtitle">智能多代理行程引擎</string>
     <string name="home_loading">加载中</string>
-    <string name="home_greeting_line">%1$s，下一站想去哪里？</string>
-    <string name="home_signature_default">输入城市与天数，快速生成包含交通、住宿与餐饮的完整方案</string>
+    <string name="home_greeting_line">下一站，去哪里？</string>
+    <string name="home_current_season">%1$s日灵感</string>
+    <string name="home_season_choice">%1$s季</string>
+    <string name="home_switch_season">切换季节</string>
     <string name="home_collab_plan">多智能体协同规划</string>
     <string name="home_intent">意向目的地</string>
-    <string name="home_gaming">食宿/交通博弈寻优</string>
+    <string name="home_gaming">权衡食宿交通</string>
     <string name="home_route">可执行路书</string>
     <string name="home_new_trip">规划新行程</string>
     <string name="home_tag_spring">SPRING · 01</string>
@@ -277,18 +278,45 @@
     <string name="season_palette_spring">樱花粉 · 嫩芽绿</string>
     <string name="season_palette_summer">青绿 · 日光黄</string>
     <string name="season_palette_autumn">杏橙 · 枫叶红</string>
-    <string name="season_palette_winter">雪白 · 鸢尾紫</string>
+    <string name="season_palette_winter">冷雾冰蓝 · 冰川松烟蓝</string>
     <string name="season_community_spring">把路上的春天，分享给彼此。</string>
     <string name="season_community_summer">沿着夏日的风，遇见同行的人。</string>
     <string name="season_community_autumn">收藏一段秋色，留给下一位旅人。</string>
     <string name="season_community_winter">让冬日的故事，温暖下一程。</string>
-    <string name="home_new_trip_sub">一键生成主题动线、酒店餐饮与预算方案</string>
-    <string name="home_start_plan">开始规划</string>
+    <string name="home_new_trip_sub">一键生成主题动线、食宿与预算</string>
+    <string name="home_planner_input">目的地与天数</string>
+    <string name="home_planner_placeholder">如：乌鲁木齐 3日</string>
+    <string name="home_planner_go">出发</string>
+    <string name="home_planner_full">详细规划</string>
+    <string name="home_planner_input_error">请输入境内目的地，天数可选（1–30 天）</string>
+    <string-array name="home_suggestions_spring">
+        <item>婺源</item>
+        <item>杭州</item>
+        <item>林芝</item>
+    </string-array>
+    <string-array name="home_suggestions_summer">
+        <item>青岛</item>
+        <item>威海</item>
+        <item>舟山</item>
+    </string-array>
+    <string-array name="home_suggestions_autumn">
+        <item>阿尔山</item>
+        <item>喀纳斯</item>
+        <item>腾冲</item>
+    </string-array>
+    <string-array name="home_suggestions_winter">
+        <item>禾木</item>
+        <item>阿勒泰</item>
+        <item>长白山</item>
+    </string-array>
     <string name="home_room_title">协作房间</string>
-    <string name="home_room_sub">邀请同行者实时同步</string>
-    <string name="home_risk_title">风险通知</string>
-    <string name="home_unread">共 %1$d 条未读提醒</string>
-    <string name="home_no_alerts">暂无新提醒</string>
+    <string name="home_room_sub">邀请同行人共创</string>
+    <string name="home_risk_title">行程护航</string>
+    <string name="home_unread">%1$d 条未读提醒</string>
+    <string name="home_no_alerts">暂无新的天气或路况预警</string>
+    <string name="home_risk_warning">%1$d 条未读 · 含预警</string>
+    <string name="home_risk_unavailable">暂未获取提醒</string>
+    <string name="home_risk_checking">正在查看提醒…</string>
     <string name="home_trip_count">共 %1$d 份</string>
     <string name="home_syncing">正在同步云端行程…</string>
     <string name="home_retry">重试</string>
@@ -296,10 +324,16 @@
     <string name="home_empty_sub">生成的行程方案保存后会自动归档在这里</string>
     <string name="home_empty_action">去创建第一份行程</string>
     <string name="home_trip_travelers">%1$d人同行</string>
+    <string name="home_trip_day">DAY</string>
+    <string name="home_trip_days">DAYS</string>
     <string name="home_trip_title">%1$s 深度游方案</string>
     <string name="home_trip_unnamed">未命名行程</string>
-    <string name="home_account">账号 @%1$s</string>
-    <string name="home_registered">注册于 %1$s · Web 端实时同步</string>
+    <string name="home_account_title">我的账号</string>
+    <string name="home_account_profile">个人资料</string>
+    <string name="home_web_sync">Web 行程同步</string>
+    <string name="home_web_syncing">同步中</string>
+    <string name="home_web_synced">云端行程已更新</string>
+    <string name="home_web_sync_unavailable">同步暂不可用</string>
     <string name="home_logging_out">退出中…</string>
     <string name="home_logout">退出登录</string>
 
@@ -368,16 +402,15 @@
     <string name="notify_mark_all_read_failed">全部已读失败，请稍后重试</string>
     <string name="notify_title">风险通知</string>
     <string name="notify_unread_count">%1$d 条未读</string>
-    <string name="notify_firebase_hint">未集成 Firebase：风险提醒改用后台巡检（约 15 分钟一次），开启后会直接弹出系统通知。</string>
     <string name="notify_channel_name">风险提醒</string>
     <string name="notify_channel_desc">目的地风险变化与行程调整建议</string>
     <string name="notify_push_title">系统通知提醒</string>
-    <string name="notify_push_sub">每 15 分钟在后台检查目的地风险，变化会用系统通知提醒</string>
+    <string name="notify_push_sub">守护目的地天气与路况，发现变化及时提醒。</string>
     <string name="notify_push_check">立即检查</string>
     <string name="notify_push_checking">检查中…</string>
     <string name="notify_push_checked">已检查，共 %1$d 条未读风险通知</string>
     <string name="notify_push_cities">监控城市：%1$s</string>
-    <string name="notify_push_no_city">暂无监控城市：需先保存行程，且风险服务可用</string>
+    <string name="notify_push_no_city">暂无监控城市</string>
     <string name="notify_push_denied">未获得通知权限，请在系统设置中允许后重试</string>
     <string name="notify_push_busy">处理中…</string>
     <string name="notify_filter_all">全部</string>
@@ -537,6 +570,40 @@
     <string name="auth_register_submit">注册</string>
     <string name="auth_tab_login_short">登录</string>
     <string name="auth_tab_register_short">注册</string>
+    <string name="pass_begin">开启旅程</string>
+    <string name="pass_returning">已有账号？登录</string>
+    <string name="pass_close">返回四季引导</string>
+    <string name="pass_title">旅人通行证</string>
+    <string name="pass_return">持票归来</string>
+    <string name="pass_issue">签发新证</string>
+    <string name="pass_depart">检票出发</string>
+    <string name="pass_sign_depart">签发并出发</string>
+    <string name="pass_checking">核验中…</string>
+    <string name="pass_verified">VERIFIED · 已检票</string>
+    <string name="pass_recover">忘记密钥</string>
+    <string name="pass_traveler_id">旅客账号</string>
+    <string name="pass_nickname">昵称（选填）</string>
+    <string name="pass_access_key">通行密码</string>
+    <string name="pass_confirm_key">确认通行密码</string>
+    <string name="pass_header">OMNIROUTE PASS · 2026 / %1$s</string>
+    <string name="pass_return_pass">RETURN PASS</string>
+    <string name="pass_new_issue">NEW ISSUE</string>
+    <string name="pass_passenger">PASSENGER / 持票人</string>
+    <string name="pass_edition">%1$s · %2$02d / %3$s</string>
+    <string name="pass_serial">OMNI-26-%1$s-%2$03d</string>
+    <string name="pass_seal_description">%1$s专属印章</string>
+    <string name="pass_spring">春季芳菲卷</string>
+    <string name="pass_summer">夏季浮光笺</string>
+    <string name="pass_autumn">秋季枫露票</string>
+    <string name="pass_winter">冬季栖雪帖</string>
+    <string name="pass_motto_spring">寻花问柳</string>
+    <string name="pass_motto_summer">逐浪听风</string>
+    <string name="pass_motto_autumn">踏叶归途</string>
+    <string name="pass_motto_winter">踏雪夜行</string>
+    <string name="pass_invalid_key">票据核验未通过，请核对旅客账号和通行密钥。</string>
+    <string name="pass_issued_login">账号已签发，请使用新账号登录。</string>
+    <string name="auth_pause_seasons">暂停四季流转</string>
+    <string name="auth_play_seasons">播放四季流转</string>
     <string name="auth_season_spring">春</string>
     <string name="auth_season_summer">夏</string>
     <string name="auth_season_autumn">秋</string>
@@ -867,7 +934,7 @@
     <string name="budget_error_add">记账失败，请重试</string>
     <string name="budget_error_amount">请输入大于 0 的金额</string>
     <string name="budget_ocr_title">拍小票记账</string>
-    <string name="budget_ocr_sub">自动识别金额与分类，识别不准可手动补录</string>
+    <string name="budget_ocr_sub">一拍即录，自动识别金额与类目</string>
     <string name="budget_ocr_running">正在识别小票…</string>
     <string name="budget_ocr_saved">已按小票记账</string>
     <string name="budget_ocr_fail">未能识别出金额，请手动录入</string>

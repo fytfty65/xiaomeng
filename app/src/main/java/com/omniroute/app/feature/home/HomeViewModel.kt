@@ -8,6 +8,7 @@ import com.omniroute.app.R
 import com.omniroute.app.core.network.dto.TripPlanDto
 import com.omniroute.app.core.network.dto.UserDto
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -27,10 +28,14 @@ internal data class HomeUiState(
     val trips: List<TripPlanDto> = emptyList(),
     val loadingTrips: Boolean = true,
     val tripsError: String? = null,
-    val unreadCount: Int = 0,
+    val alerts: HomeAlerts? = null,
+    val alertsUnavailable: Boolean = false,
     val lastRefreshTick: Int = 0,
     val refreshing: Boolean = false,
 )
+
+internal data class HomeAlerts(val unreadCount: Int, val hasWarning: Boolean)
+private val WarningSeverities = setOf("medium", "moderate", "high", "critical", "severe")
 
 internal sealed interface HomeEvent {
     /** 退出登录完成：页面据此回到登录页。 */
@@ -56,11 +61,12 @@ internal class HomeViewModel(
 
     private val _events = MutableSharedFlow<HomeEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<HomeEvent> = _events.asSharedFlow()
+    private var alertsJob: Job? = null
 
     init {
         loadProfile()
         loadTrips()
-        loadUnreadCount()
+        loadAlerts()
     }
 
     /** 从其它页面返回时递增的刷新信号；重复值直接忽略，避免重建时重复拉取。 */
@@ -68,20 +74,19 @@ internal class HomeViewModel(
         if (tick == _state.value.lastRefreshTick) return
         _state.update { it.copy(lastRefreshTick = tick) }
         loadTrips()
-        loadUnreadCount()
+        loadAlerts()
     }
 
     /** 下拉刷新：行程与未读数一起重拉，失败时保留旧列表只提示错误。 */
     fun refresh() {
         if (_state.value.refreshing) return
         _state.update { it.copy(refreshing = true) }
+        val alertRefresh = loadAlerts()
         viewModelScope.launch {
             val tripsOutcome = withContext(Dispatchers.IO) {
                 runCatching { container.planningRepository.listTrips() }
             }
-            val unreadOutcome = withContext(Dispatchers.IO) {
-                runCatching { container.notificationRepository.unreadCount() }
-            }
+            alertRefresh.join()
             _state.update { current ->
                 val error = tripsOutcome.exceptionOrNull()?.let {
                     it.message ?: context.getString(R.string.home_error_trips)
@@ -89,7 +94,6 @@ internal class HomeViewModel(
                 current.copy(
                     trips = tripsOutcome.getOrNull() ?: current.trips,
                     tripsError = error,
-                    unreadCount = unreadOutcome.getOrDefault(current.unreadCount),
                     loadingTrips = false,
                     refreshing = false,
                 )
@@ -136,14 +140,24 @@ internal class HomeViewModel(
         }
     }
 
-    fun loadUnreadCount() {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                runCatching { container.notificationRepository.unreadCount() }
-            }.onSuccess { count ->
-                _state.update { it.copy(unreadCount = count) }
+    private fun loadAlerts(): Job {
+        alertsJob?.cancel()
+        return viewModelScope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching { container.notificationRepository.unreadRiskNotifications() }
             }
-        }
+            outcome.onSuccess { response ->
+                val warning = response.notifications.any { item ->
+                    val type = item.type.orEmpty().lowercase()
+                    type.startsWith("weather") || type.startsWith("traffic") ||
+                        item.severity?.lowercase() in WarningSeverities
+                }
+                val count = maxOf(response.unreadCount, response.notifications.size)
+                _state.update { it.copy(alerts = HomeAlerts(count, warning), alertsUnavailable = false) }
+            }.onFailure {
+                _state.update { it.copy(alertsUnavailable = true) }
+            }
+        }.also { alertsJob = it }
     }
 
     fun logout() {

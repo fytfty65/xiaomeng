@@ -1,5 +1,28 @@
 package com.omniroute.app.feature.room
 
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.omniroute.app.core.ui.theme.EditionSurface
+import com.omniroute.app.core.ui.theme.OmniSeasonLogo
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.edition
+import com.omniroute.app.core.ui.components.SeasonArtwork
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.shape.GenericShape
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.material3.LinearProgressIndicator
+import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -93,7 +116,7 @@ fun RoomScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CreamBg),
+            .seasonBackdrop(),
     ) {
         Column(
             modifier = Modifier
@@ -171,8 +194,7 @@ fun RoomScreen(
 
             if (state.room != null) {
                 Surface(
-                    color = CardBg,
-                    border = BorderStroke(1.dp, CardBorder),
+                    color = EditionSurface,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
@@ -286,8 +308,7 @@ private fun CreateRoomCard(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -331,8 +352,7 @@ private fun JoinRoomCard(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -374,103 +394,143 @@ private fun RoomCodeCard(
     onLeave: () -> Unit,
 ) {
     var copied by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val notch = with(density) { 7.dp.toPx() }
+    var headerHeight by remember { mutableIntStateOf(0) }
+    val perforation = headerHeight + with(density) { 33.dp.toPx() }
+    val shape = remember(notch, perforation) {
+        GenericShape { size, _ ->
+            val cut = perforation.coerceIn(notch * 2, size.height - notch * 2)
+            val w = size.width
+            val h = size.height
+            val corner = notch * 2f
+            moveTo(corner, 0f)
+            lineTo(w - corner, 0f)
+            quadraticTo(w, 0f, w, corner)
+            lineTo(w, cut - notch)
+            arcTo(Rect(w - notch, cut - notch, w + notch, cut + notch), -90f, -180f, false)
+            lineTo(w, h - corner)
+            quadraticTo(w, h, w - corner, h)
+            lineTo(corner, h)
+            quadraticTo(0f, h, 0f, h - corner)
+            lineTo(0f, cut + notch)
+            arcTo(Rect(-notch, cut - notch, notch, cut + notch), 90f, -180f, false)
+            lineTo(0f, corner)
+            quadraticTo(0f, 0f, corner, 0f)
+            close()
+        }
+    }
+    val accent = BrandOrange
     Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
+        shape = shape,
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
+        Box {
+            Canvas(Modifier.matchParentSize()) {
+                val y = perforation
+                drawLine(
+                    accent.copy(alpha = 0.40f), Offset(notch * 2, y), Offset(size.width - notch * 2, y),
+                    strokeWidth = 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 4.dp.toPx())),
+                )
+            }
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(
+                    modifier = Modifier.onSizeChanged { headerHeight = it.height },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = room.roomName.ifBlank { stringResource(R.string.room_fallback_name) },
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Surface(shape = RoundedCornerShape(50), color = OrangeLightBg) {
+                            Text(
+                                text = stringResource(
+                                    if (room.isHost) R.string.room_host else R.string.room_member,
+                                ),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrandOrange,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                    OmniSeasonLogo(diameter = 42.dp)
+                }
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                Text(
+                    text = stringResource(R.string.room_invite_code),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Muted,
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = room.roomName.ifBlank { stringResource(R.string.room_fallback_name) },
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = room.inviteCode,
+                        fontSize = 27.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 5.sp,
                         color = Ink,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Surface(shape = RoundedCornerShape(50), color = OrangeLightBg) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(OrangeLightBg)
+                            .clickable(role = Role.Button) {
+                                onCopy()
+                                copied = true
+                            }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    ) {
                         Text(
                             text = stringResource(
-                                if (room.isHost) R.string.room_host else R.string.room_member,
+                                if (copied) R.string.room_copied else R.string.room_copy,
                             ),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = BrandOrange,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = LocalAppPalette.current.divider, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = stringResource(R.string.room_invite_code),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Muted,
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = room.inviteCode,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 5.sp,
-                    color = Ink,
-                    modifier = Modifier.weight(1f),
+                    text = stringResource(R.string.room_invite_hint),
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    color = Muted,
                 )
-                Box(
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = stringResource(R.string.room_leave),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Muted,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(OrangeLightBg)
-                        .clickable(role = Role.Button) {
-                            onCopy()
-                            copied = true
-                        }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                ) {
-                    Text(
-                        text = stringResource(
-                            if (copied) R.string.room_copied else R.string.room_copy,
-                        ),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BrandOrange,
-                    )
-                }
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(role = Role.Button, onClick = onLeave)
+                        .padding(vertical = 6.dp),
+                )
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = stringResource(R.string.room_invite_hint),
-                fontSize = 12.sp,
-                lineHeight = 17.sp,
-                color = Muted,
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = stringResource(R.string.room_leave),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Muted,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(role = Role.Button, onClick = onLeave)
-                    .padding(vertical = 6.dp),
-            )
         }
     }
 }
 
 /** 房间方案池：成员加入候选方案后在这里投票，胜出方案可一键采纳建立预算基线。 */
+
 @Composable
 private fun VariantsSection(
     variants: List<PlanVariantUi>,
@@ -484,8 +544,7 @@ private fun VariantsSection(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -535,6 +594,7 @@ private fun VariantsSection(
                     }
                     VariantRow(
                         variant = variant,
+                        voteShare = variant.votes.toFloat() / variants.sumOf { it.votes }.coerceAtLeast(1),
                         voting = votingId == variant.id,
                         voteEnabled = votingId == null,
                         adopting = adoptingId == variant.id,
@@ -559,6 +619,7 @@ private fun VariantsSection(
 @Composable
 private fun VariantRow(
     variant: PlanVariantUi,
+    voteShare: Float,
     voting: Boolean,
     voteEnabled: Boolean,
     adopting: Boolean,
@@ -571,7 +632,8 @@ private fun VariantRow(
         stringResource(R.string.room_variants_votes, variant.votes),
     ).joinToString(" · ")
     Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+            SeasonArtwork(Modifier.size(43.dp).clip(RoundedCornerShape(8.dp)))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -610,6 +672,13 @@ private fun VariantRow(
                 modifier = Modifier.width(84.dp),
             )
         }
+        Spacer(Modifier.height(7.dp))
+        LinearProgressIndicator(
+            progress = { voteShare.coerceIn(0f, 1f) },
+            modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
+            color = BrandOrange,
+            trackColor = OrangeLightBg,
+        )
         if (variant.winner) {
             Spacer(modifier = Modifier.height(8.dp))
             SecondaryButton(
@@ -626,10 +695,11 @@ private fun VariantRow(
 
 @Composable
 private fun MembersSection(members: List<RoomMember>, connected: Boolean) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val palette = LocalAppPalette.current
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -671,13 +741,33 @@ private fun MembersSection(members: List<RoomMember>, connected: Boolean) {
                     color = Muted,
                 )
             } else {
-                members.forEachIndexed { index, member ->
-                    if (index > 0) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        HorizontalDivider(color = LocalAppPalette.current.divider, thickness = 1.dp)
-                        Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 5.dp),
+                    horizontalArrangement = Arrangement.spacedBy((-5).dp),
+                ) {
+                    members.forEach { member ->
+                        val name = member.name ?: stringResource(R.string.room_traveler)
+                        val description = listOfNotNull(name, member.role).joinToString(" · ")
+                        Box(
+                            Modifier.size(39.dp).clip(CircleShape).background(palette.brandTint)
+                                .border(1.5.dp, if (connected) palette.brand else palette.border, CircleShape)
+                                .semantics { contentDescription = description },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(member.initial, color = palette.brand, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
-                    MemberRow(member)
+                }
+                TextButton(onClick = { expanded = !expanded }) {
+                    Text(if (expanded) "收起成员信息" else "查看成员信息", fontSize = 12.sp)
+                }
+                if (expanded) {
+                    members.forEachIndexed { index, member ->
+                        if (index > 0) {
+                            HorizontalDivider(color = palette.divider, modifier = Modifier.padding(vertical = 8.dp))
+                        }
+                        MemberRow(member)
+                    }
                 }
             }
         }

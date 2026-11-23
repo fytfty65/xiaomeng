@@ -47,9 +47,12 @@ public final class NotificationRepository {
     }
 
     public int unreadCount() throws ApiException {
-        RiskNotificationsData data = data(
+        return unreadRiskNotifications().getUnreadCount();
+    }
+
+    public RiskNotificationsData unreadRiskNotifications() throws ApiException {
+        return data(
                 api.riskNotifications("unread"), AppStrings.get(R.string.label_risk_notifications));
-        return data.getUnreadCount();
     }
 
     public void markRead(String notificationId, String status) throws ApiException {

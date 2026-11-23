@@ -1,5 +1,20 @@
 package com.omniroute.app.feature.trip
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.foundation.layout.heightIn
+import android.widget.Toast
+import com.omniroute.app.core.ui.components.ItineraryDayPicker
+import com.omniroute.app.core.ui.theme.EditionSurface
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.OmniSeasonLogo
+import com.omniroute.app.core.ui.theme.edition
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.graphics.Brush
+import com.omniroute.app.core.ui.theme.seasonBackdrop
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -65,6 +80,7 @@ import com.omniroute.app.core.ui.theme.LocalAppPalette
 import com.omniroute.app.core.ui.wheelScroll
 import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun JourneyScreen(
     container: AppContainer,
@@ -93,12 +109,19 @@ fun JourneyScreen(
 
     val palette = LocalAppPalette.current
     val listState = rememberLazyListState()
+    val days = state.nodes.map { it.day }.distinct().sorted()
+    val next = state.nodes.firstOrNull { it.status == "in_progress" || it.status == "delayed" }
+        ?: state.nodes.firstOrNull { it.status == "planned" }
+    var dayChoice by rememberSaveable(tripId) { mutableStateOf<Int?>(null) }
+    val activeDay = dayChoice?.takeIf { it in days } ?: next?.day ?: days.firstOrNull()
+    var openNode by rememberSaveable(tripId) { mutableStateOf<String?>(null) }
+    var packingOpen by rememberSaveable(tripId) { mutableStateOf(false) }
 
     LazyColumn(
         state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .seasonBackdrop()
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .wheelScroll(listState),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -191,6 +214,33 @@ fun JourneyScreen(
                 completed = state.completed,
                 total = state.total,
             )
+        }
+
+        if (next != null) {
+            item(key = "focus") {
+                val style = LocalJourneySeason.current.edition
+                val context = LocalContext.current
+                Surface(shape = RoundedCornerShape(18.dp), color = EditionSurface) {
+                    Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("下一站 · 第 ${next.day} 天", color = palette.brand, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            OmniSeasonLogo(diameter = 24.dp)
+                        }
+                        Text(next.name, color = palette.ink, fontFamily = style.titleFont, fontWeight = style.titleWeight, fontSize = 24.sp)
+                        PrimaryAction(
+                            text = "到达并打卡",
+                            enabled = state.updatingNodeKey == null,
+                            onClick = { viewModel.updateStatus(next, "visited") },
+                        )
+                        TextButton(onClick = {
+                            val query = listOf(state.destination, next.name).filter { it.isNotBlank() }.distinct().joinToString(" ")
+                            if (!searchMap(context, query)) {
+                                Toast.makeText(context, R.string.trip_navigate_error, Toast.LENGTH_SHORT).show()
+                            }
+                        }) { Text("在地图中查看") }
+                    }
+                }
+            }
         }
 
         if (state.nextActions.isNotEmpty()) {
@@ -286,7 +336,12 @@ fun JourneyScreen(
                 )
             }
         } else {
-            state.nodes.groupBy { it.day }.forEach { (day, nodes) ->
+            stickyHeader(key = "journey_day_picker") {
+                Box(Modifier.fillMaxWidth().background(palette.background)) {
+                    ItineraryDayPicker(days, activeDay, { dayChoice = it })
+                }
+            }
+            state.nodes.filter { it.day == activeDay }.groupBy { it.day }.forEach { (day, nodes) ->
                 item(key = "day_$day") {
                     Text(
                         text = stringResource(R.string.journey_day_label, day),
@@ -299,6 +354,8 @@ fun JourneyScreen(
                 items(nodes, key = { "node_${it.key}" }) { node ->
                     NodeCard(
                         node = node,
+                        expanded = openNode == node.key,
+                        onToggle = { openNode = if (openNode == node.key) null else node.key },
                         updating = state.updatingNodeKey == node.key,
                         enabled = state.updatingNodeKey == null,
                         onStart = { viewModel.updateStatus(node, "in_progress") },
@@ -331,9 +388,12 @@ fun JourneyScreen(
                     fontSize = 12.sp,
                     color = palette.muted,
                 )
+                TextButton(onClick = { packingOpen = !packingOpen }) {
+                    Text(if (packingOpen) "收起" else "展开", fontSize = 12.sp)
+                }
             }
         }
-        if (state.packing.isEmpty()) {
+        if (packingOpen && state.packing.isEmpty()) {
             item(key = "packing_empty") {
                 Text(
                     text = stringResource(R.string.journey_packing_empty),
@@ -341,7 +401,7 @@ fun JourneyScreen(
                     color = palette.muted,
                 )
             }
-        } else {
+        } else if (packingOpen) {
             items(state.packing, key = { "packing_${it.id ?: it.name}" }) { item ->
                 PackingRow(
                     item = item,
@@ -364,44 +424,23 @@ fun JourneyScreen(
 @Composable
 private fun ProgressCard(phase: String, progress: Int, completed: Int, total: Int) {
     val palette = LocalAppPalette.current
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = palette.surface,
-        border = BorderStroke(1.dp, palette.border),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = phaseLabel(phase),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = palette.brand,
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = stringResource(R.string.journey_progress_value, progress, completed, total),
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = palette.ink,
-                )
+    val style = LocalJourneySeason.current.edition
+    val fraction = progress.coerceIn(0, 100) / 100f
+    Surface(shape = RoundedCornerShape(19.dp), color = EditionSurface, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(13.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(59.dp), contentAlignment = Alignment.Center) {
+                Canvas(Modifier.matchParentSize().padding(5.dp)) {
+                    val stroke = Stroke(4.dp.toPx(), cap = StrokeCap.Round)
+                    drawArc(palette.brandTint, -90f, 360f, false, style = stroke)
+                    if (fraction > 0f) drawArc(style.actionGradient, -90f, 360f * fraction, false, style = stroke)
+                }
+                Text("$progress%", fontSize = 11.sp, color = palette.brand, fontFamily = FontFamily.Monospace)
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            LinearProgressIndicator(
-                progress = { progress / 100f },
-                color = palette.brand,
-                trackColor = palette.brandTint,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(7.dp)
-                    .clip(RoundedCornerShape(50)),
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = stringResource(R.string.journey_progress),
-                fontSize = 11.sp,
-                color = palette.muted,
-            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(R.string.journey_progress), color = palette.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text(phaseLabel(phase), color = palette.brand, fontSize = 12.sp)
+                Text(stringResource(R.string.journey_progress_value, progress, completed, total), color = palette.muted, fontSize = 11.sp)
+            }
         }
     }
 }
@@ -510,6 +549,8 @@ private fun CandidateCard(
 @Composable
 private fun NodeCard(
     node: JourneyNodeUi,
+    expanded: Boolean,
+    onToggle: () -> Unit,
     updating: Boolean,
     enabled: Boolean,
     onStart: () -> Unit,
@@ -518,14 +559,17 @@ private fun NodeCard(
     onDelay: () -> Unit,
 ) {
     val palette = LocalAppPalette.current
+    val complete = node.status == "visited" || node.status == "skipped"
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = palette.surface,
-        border = BorderStroke(1.dp, palette.border),
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = if (complete) Modifier else Modifier.clickable(role = Role.Button, onClick = onToggle),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = node.name,
                     fontSize = 14.sp,
@@ -536,7 +580,14 @@ private fun NodeCard(
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
+                if (node.status == "visited") {
+                    OmniSeasonLogo(diameter = 18.dp)
+                    Spacer(Modifier.width(4.dp))
+                }
                 StatusChip(status = node.status)
+                if (!complete) {
+                    Text(if (expanded) " −" else " +", color = palette.brand)
+                }
             }
             if (node.delayMinutes > 0) {
                 Spacer(modifier = Modifier.height(4.dp))
@@ -546,9 +597,9 @@ private fun NodeCard(
                     color = palette.warningFg,
                 )
             }
-            if (node.status != "visited" && node.status != "skipped") {
+            if (!complete && expanded) {
                 Spacer(modifier = Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     if (node.status == "planned") {
                         ActionButton(
                             text = stringResource(R.string.journey_action_start),

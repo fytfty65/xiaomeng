@@ -1,5 +1,24 @@
 package com.omniroute.app.feature.trip
 
+import com.omniroute.app.core.network.dto.BudgetSummaryDto
+import com.omniroute.app.core.network.dto.ExecutionSummaryDto
+import androidx.compose.material3.LinearProgressIndicator
+import java.text.NumberFormat
+import java.util.Currency
+import com.omniroute.app.core.ui.components.SeasonArtwork
+import com.omniroute.app.core.ui.theme.EditionSurface
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.edition
+import com.omniroute.app.core.ui.theme.OmniSeasonLogo
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -190,6 +209,8 @@ internal fun TripDetailHeader(
     summary: String?,
     hasContent: Boolean,
     daysCount: Int,
+    journeyProgress: ExecutionSummaryDto?,
+    budgetProgress: BudgetSummaryDto?,
     onEditRoute: () -> Unit,
     onOpenJourney: () -> Unit,
     onOpenBudget: () -> Unit,
@@ -214,106 +235,30 @@ internal fun TripDetailHeader(
 
     Spacer(modifier = Modifier.height(14.dp))
 
-    // 旅途助手入口：执行进度、风险调整与行前清单集中在这里，避免详情页继续堆操作。
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, SubtleBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onOpenJourney),
+    val execution = journeyProgress?.takeIf { it.total > 0 }
+    val ledger = budgetProgress?.takeIf { it.totalBudgetCents > 0 }
+    Row(
+        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(9.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(OrangeLightBg),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.List,
-                    contentDescription = null,
-                    tint = BrandOrange,
-                    modifier = Modifier.size(17.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.journey_open),
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink,
-                )
-                Text(
-                    text = stringResource(R.string.journey_sub),
-                    fontSize = 11.sp,
-                    color = Muted,
-                )
-            }
-            Icon(
-                imageVector = Icons.Filled.ArrowForward,
-                contentDescription = null,
-                tint = Muted,
-                modifier = Modifier.size(16.dp),
-            )
-        }
-    }
-
-    Spacer(modifier = Modifier.height(10.dp))
-
-    // 预算管家入口：旅中记账与超支预警独立成页，详情页只保留入口。
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, SubtleBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onOpenBudget),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(OrangeLightBg),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.ShoppingCart,
-                    contentDescription = null,
-                    tint = BrandOrange,
-                    modifier = Modifier.size(17.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.label_budget),
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink,
-                )
-                Text(
-                    text = stringResource(R.string.budget_entry_sub),
-                    fontSize = 11.sp,
-                    color = Muted,
-                )
-            }
-            Icon(
-                imageVector = Icons.Filled.ArrowForward,
-                contentDescription = null,
-                tint = Muted,
-                modifier = Modifier.size(16.dp),
-            )
-        }
+        TripToolTile(
+            icon = Icons.Filled.List,
+            title = R.string.journey_open,
+            subtitle = execution?.let { "已打卡 ${it.completed} / ${it.total} 站" }
+                ?: stringResource(R.string.journey_sub),
+            progress = execution?.let { it.completed.toFloat() / it.total },
+            onClick = onOpenJourney,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        )
+        TripToolTile(
+            icon = Icons.Filled.ShoppingCart,
+            title = R.string.label_budget,
+            subtitle = ledger?.let { "${ticketMoney(it.spentCents, it.currency)} / ${ticketMoney(it.totalBudgetCents, it.currency)}" }
+                ?: stringResource(R.string.budget_entry_sub),
+            progress = ledger?.ratio?.toFloat(),
+            onClick = onOpenBudget,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+        )
     }
 
     Spacer(modifier = Modifier.height(24.dp))
@@ -380,14 +325,49 @@ internal fun TripDetailHeader(
 
 /** 结构化主抬头卡片 */
 @Composable
+private fun TripToolTile(
+    icon: ImageVector,
+    title: Int,
+    subtitle: String,
+    progress: Float?,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    Surface(
+        onClick = onClick, modifier = modifier, shape = RoundedCornerShape(15.dp), color = EditionSurface,
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Icon(icon, null, tint = BrandOrange, modifier = Modifier.size(20.dp))
+            Text(stringResource(title), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+            Text(subtitle, fontSize = 11.sp, lineHeight = 16.sp, color = Muted)
+            progress?.takeIf(Float::isFinite)?.let { amount ->
+                LinearProgressIndicator(
+                    progress = { amount.coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth().height(3.dp).clip(CircleShape),
+                    color = BrandOrange, trackColor = OrangeLightBg,
+                )
+            }
+        }
+    }
+}
+
+private fun ticketMoney(cents: Long, code: String?): String {
+    val formatter = NumberFormat.getCurrencyInstance()
+    formatter.currency = runCatching { Currency.getInstance(code ?: "CNY") }.getOrDefault(Currency.getInstance("CNY"))
+    formatter.maximumFractionDigits = if (cents % 100L == 0L) 0 else 2
+    return formatter.format(cents / 100.0)
+}
+
+@Composable
 private fun EditorialHeroCard(trip: TripPlanDto, summary: String?) {
     val context = LocalContext.current
     val city = trip.destCity?.trim().orEmpty()
+    val style = LocalJourneySeason.current.edition
+    var showSummary by rememberSaveable(trip.id) { mutableStateOf(false) }
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, SubtleBorder),
+        color = EditionSurface,
         modifier = Modifier
             .fillMaxWidth()
             .shadow(
@@ -397,73 +377,22 @@ private fun EditorialHeroCard(trip: TripPlanDto, summary: String?) {
                 spotColor = BrandOrange.copy(alpha = 0.08f),
             ),
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            // 顶部状态条：目的地胶囊 + 同步状态
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                if (city.isNotEmpty()) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = OrangeLightBg,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.LocationOn,
-                                contentDescription = null,
-                                tint = BrandOrange,
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = city,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = BrandOrange,
-                            )
-                        }
-                    }
-                } else {
-                    Spacer(modifier = Modifier.width(1.dp))
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = VerifiedGreenBg,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .clip(CircleShape)
-                                .background(VerifiedGreen),
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = stringResource(R.string.trip_synced),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = VerifiedGreen,
-                        )
-                    }
+        Column {
+            SeasonArtwork(Modifier.fillMaxWidth().height(122.dp)) {
+                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xB517212B)))))
+                OmniSeasonLogo(Modifier.align(Alignment.TopEnd).padding(12.dp), diameter = 34.dp, tint = Color.White)
+                if (city.isNotBlank()) {
+                    Text(city, color = Color.White, fontFamily = style.titleFont, fontWeight = style.titleWeight,
+                        fontSize = 23.sp, modifier = Modifier.align(Alignment.BottomStart).padding(15.dp))
                 }
             }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
+        Column(modifier = Modifier.padding(15.dp)) {
             // 行程大标题
             Text(
                 text = tripTitle(context, trip),
                 fontSize = 22.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontFamily = style.titleFont,
+                fontWeight = style.titleWeight,
                 lineHeight = 30.sp,
                 color = Ink,
             )
@@ -471,9 +400,9 @@ private fun EditorialHeroCard(trip: TripPlanDto, summary: String?) {
             Spacer(modifier = Modifier.height(12.dp))
 
             // 核心属性微标行
-            Row(
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 if (trip.days > 0) {
                     PropertyTag(
@@ -496,35 +425,15 @@ private fun EditorialHeroCard(trip: TripPlanDto, summary: String?) {
                 }
             }
 
-            // 摘要或路书导语
             if (!summary.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = CardLineDivider, thickness = 1.dp)
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(TagBg)
-                        .padding(14.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(3.dp)
-                            .height(18.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(BrandOrange),
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = summary,
-                        fontSize = 12.5.sp,
-                        lineHeight = 19.sp,
-                        color = Ink.copy(alpha = 0.85f),
-                    )
+                Spacer(Modifier.height(10.dp))
+                Text(summary, color = Muted, lineHeight = 19.sp, fontSize = 12.5.sp,
+                    maxLines = if (showSummary) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis)
+                TextButton(onClick = { showSummary = !showSummary }) {
+                    Text(if (showSummary) "收起路书导语" else "展开路书导语", fontSize = 12.sp)
                 }
             }
+        }
         }
     }
 }
@@ -632,4 +541,3 @@ internal fun RefinedErrorBlock(message: String, onRetry: () -> Unit) {
         }
     }
 }
-

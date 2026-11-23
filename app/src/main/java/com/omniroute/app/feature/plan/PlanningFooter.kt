@@ -1,5 +1,15 @@
 package com.omniroute.app.feature.plan
 
+import com.omniroute.app.core.ui.theme.EditionSurface
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.edition
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.material3.minimumInteractiveComponentSize
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -50,9 +60,8 @@ internal fun PlanningFooter(
     onSave: () -> Unit,
 ) {
     Surface(
-        color = PlanCardBg,
-        border = BorderStroke(1.dp, PlanSubtleBorder.copy(alpha = 0.7f)),
-        shadowElevation = 12.dp,
+        color = EditionSurface,
+        shadowElevation = 2.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -163,6 +172,14 @@ internal fun ModernFullButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(targetValue = if (isPressed) 0.985f else 1f, label = "btn_scale")
+    val style = LocalJourneySeason.current.edition
+    val scan = rememberInfiniteTransition(label = "planning button sheen")
+    val sheen by scan.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2_900, delayMillis = 2_100, easing = LinearEasing)),
+        label = "planning action highlight",
+    )
 
     Surface(
         shape = RoundedCornerShape(14.dp),
@@ -172,9 +189,16 @@ internal fun ModernFullButton(
             .height(48.dp)
             .scale(scale)
             .clip(RoundedCornerShape(14.dp))
-            .background(
-                Brush.horizontalGradient(colors = listOf(BrandOrange, Color(0xFFFF6D2B))),
-            )
+            .background(style.actionGradient)
+            .drawBehind {
+                val center = size.width * (sheen * 1.55f - 0.25f)
+                val spread = size.width * 0.24f
+                drawRect(Brush.linearGradient(
+                    listOf(Color.Transparent, Color.White.copy(alpha = 0.07f), Color.Transparent),
+                    start = Offset(center - spread, size.height),
+                    end = Offset(center + spread, 0f),
+                ))
+            }
             .minimumInteractiveComponentSize().clickable(
                 enabled = !loading,
                 role = Role.Button,

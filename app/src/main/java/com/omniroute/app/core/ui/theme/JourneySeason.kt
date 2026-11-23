@@ -127,17 +127,17 @@ enum class JourneySeason(val key: String, val labelRes: Int) {
         )
 
         Winter -> SeasonTokens(
-            accent = Color(0xFF7356AA),
-            accentInk = Color(0xFF654493),
-            soft = Color(0xFFEEE8FA),
-            paper = Color(0xFFFCFAFF),
-            line = Color(0xFFE4DDEC),
-            night = Color(0xFF231F2D),
-            nightCard = Color(0xFF2E293B),
-            nightRaised = Color(0xFF39324A),
-            nightSoft = Color(0xFF443558),
-            nightInk = Color(0xFFD7BCFF),
-            nightLine = Color(0xFF534564),
+            accent = Color(0xFF2C4458),
+            accentInk = Color(0xFF2C4458),
+            soft = Color(0xFFEBF1F6),
+            paper = Color(0xFFF6F8FA),
+            line = Color(0xFFD9E2EA),
+            night = Color(0xFF151A21),
+            nightCard = Color(0xFF202A34),
+            nightRaised = Color(0xFF293745),
+            nightSoft = Color(0xFF2C4458),
+            nightInk = Color(0xFFBCDAED),
+            nightLine = Color(0xFF46586A),
         )
     }
 

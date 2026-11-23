@@ -73,7 +73,7 @@ public final class AuthRepository {
         }
         AuthResponse body = response.body();
         if (!response.isSuccessful() || body == null) {
-            throw new ApiException(ApiErrors.message(response));
+            throw new ApiException(ApiErrors.localized(response));
         }
         UserDto loggedInUser = body.getUser();
         if (loggedInUser == null) {

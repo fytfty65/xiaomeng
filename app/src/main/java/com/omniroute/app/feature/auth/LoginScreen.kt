@@ -1,48 +1,21 @@
 package com.omniroute.app.feature.auth
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import android.animation.ValueAnimator
+import android.os.Build
+import android.view.HapticFeedbackConstants
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalView
 import com.omniroute.app.R
 import com.omniroute.app.core.network.dto.UserDto
+import com.omniroute.app.core.ui.SystemBarIcons
 import com.omniroute.app.core.ui.theme.JourneySeason
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/**
- * 登录页：版式对齐 Web 端（118.178.237.166）的浮动登录卡片——
- * 上方秋景大图 + 左下宋体主标题，下方纸面卡片承载「好久不见。」与表单。
- */
 @Composable
 fun LoginScreen(
     initialUsername: String,
@@ -50,182 +23,134 @@ fun LoginScreen(
     season: JourneySeason,
     onSeasonChange: (JourneySeason) -> Unit,
     onLogin: suspend (username: String, password: String) -> Result<UserDto>,
+    onRegister: suspend (username: String, password: String, nickname: String?) -> Result<String>,
     onLoggedIn: (UserDto) -> Unit,
-    onGoRegister: () -> Unit,
     onForgotPassword: () -> Unit,
 ) {
-    var username by rememberSaveable { mutableStateOf(initialUsername) }
-    var password by rememberSaveable { mutableStateOf("") }
-    var loading by remember { mutableStateOf(false) }
-    var errorText by remember { mutableStateOf<String?>(null) }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var ticketSeason by rememberSaveable { mutableStateOf<JourneySeason?>(null) }
+    var register by rememberSaveable { mutableStateOf(false) }
+    var input by remember(initialUsername) { mutableStateOf(PassInput(username = initialUsername)) }
+    var phase by remember { mutableStateOf(PassPhase.Editing) }
+    var failedAttempt by remember { mutableIntStateOf(0) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var localNotice by remember { mutableStateOf<String?>(null) }
+    val focus = LocalFocusManager.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val colors = authWebColors()
+    val view = LocalView.current
+    val motion = ValueAnimator.areAnimatorsEnabled()
+    val selected = ticketSeason ?: season
 
-    LaunchedEffect(initialUsername) {
-        if (username.isBlank()) username = initialUsername
+    val close = {
+        if (phase == PassPhase.Editing) {
+            focus.clearFocus()
+            input = input.copy(password = "", confirmation = "")
+            error = null
+            localNotice = null
+            failedAttempt = 0
+            ticketSeason = null
+        }
     }
 
-    val submit: () -> Unit = {
-        val name = username.trim()
-        when {
-            loading -> Unit
-            name.isEmpty() || password.isEmpty() ->
-                errorText = context.getString(R.string.auth_login_empty)
-            else -> {
-                errorText = null
-                loading = true
-                scope.launch {
-                    val result = onLogin(name, password)
-                    loading = false
-                    result
-                        .onSuccess { onLoggedIn(it) }
-                        .onFailure {
-                            errorText = it.message ?: context.getString(R.string.auth_login_failed)
-                        }
+    BackHandler(enabled = ticketSeason != null) { close() }
+
+    fun reject(message: String) {
+        phase = PassPhase.Editing
+        error = message
+        failedAttempt++
+    }
+
+    val submit: () -> Unit = submit@{
+        if (phase != PassPhase.Editing) return@submit
+        val username = input.username.trim()
+        val password = input.password
+        val nickname = input.nickname.trim().ifEmpty { null }
+        val creating = register
+        if (username.isBlank() || password.isEmpty()) return@submit
+        if (creating && password != input.confirmation) {
+            reject(context.getString(R.string.auth_password_mismatch))
+            return@submit
+        }
+        focus.clearFocus()
+        phase = PassPhase.Checking
+        error = null
+        localNotice = null
+        scope.launch {
+            if (creating) {
+                val issued = onRegister(username, password, nickname)
+                if (issued.isFailure) {
+                    reject(issued.exceptionOrNull()?.message ?: context.getString(R.string.auth_register_failed))
+                    return@launch
                 }
             }
+            val result = onLogin(username, password)
+            val user = result.getOrNull()
+            if (user == null) {
+                if (creating) {
+                    phase = PassPhase.Editing
+                    register = false
+                    input = input.copy(password = "", confirmation = "")
+                    localNotice = context.getString(R.string.pass_issued_login)
+                } else {
+                    val detail = result.exceptionOrNull()?.message
+                    reject(
+                        if (detail.isNullOrBlank() || detail == context.getString(R.string.auth_error_invalid_credentials)) {
+                            context.getString(R.string.pass_invalid_key)
+                        } else {
+                            detail
+                        },
+                    )
+                }
+                return@launch
+            }
+            input = input.copy(password = "", confirmation = "")
+            phase = PassPhase.Verified
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+            }
+            if (motion) delay(745L)
+            onLoggedIn(user)
         }
     }
 
-    AuthLightStatusBarIcons()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colors.page),
+    SystemBarIcons(darkIcons = ticketSeason != null && selected != JourneySeason.Winter)
+    LoginLanding(
+        season = selected,
+        ticketOpen = ticketSeason != null,
+        onSeasonChange = onSeasonChange,
+        onOpen = { creating ->
+            ticketSeason = season
+            register = creating
+            failedAttempt = 0
+            error = null
+            localNotice = null
+        },
     ) {
-        AuthHero(
-            eyebrow = stringResource(R.string.auth_hero_eyebrow),
-            title = stringResource(R.string.auth_hero_title),
-            initialSeason = HeroSeason.fromKey(season.key),
-            onSeasonChanged = { onSeasonChange(JourneySeason.fromKey(it.key)) },
-            topBar = {
-                AuthHeroBrand(
-                    trailingText = stringResource(R.string.auth_tab_register_short),
-                    onTrailingClick = onGoRegister,
-                )
+        TravelerPass(
+            season = selected,
+            register = register,
+            input = input,
+            onInput = {
+                input = it
+                error = null
+            },
+            phase = phase,
+            error = error,
+            notice = localNotice ?: notice,
+            failedAttempt = failedAttempt,
+            onMode = { creating ->
+                if (register != creating) {
+                    register = creating
+                    error = null
+                    input = input.copy(password = "", confirmation = "")
+                }
+            },
+            onSubmit = submit,
+            onClose = close,
+            onRecover = {
+                input = input.copy(password = "", confirmation = "")
+                onForgotPassword()
             },
         )
-
-        AuthPaperCard(modifier = Modifier.weight(1f)) {
-            AuthCardBrandLine()
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                text = stringResource(R.string.auth_login_greeting),
-                fontFamily = FontFamily.Serif,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Medium,
-                color = colors.heading,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.auth_login_sub_web),
-                fontSize = 13.5.sp,
-                color = colors.muted,
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            AuthWebTabs(
-                registerSelected = false,
-                onLogin = {},
-                onRegister = onGoRegister,
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            notice?.let {
-                InlineBanner(text = it, bg = InfoBg, fg = InfoFg, icon = Icons.Filled.Check)
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-            errorText?.let {
-                InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            AuthLabeledField(
-                label = stringResource(R.string.auth_username_hint),
-                value = username,
-                onValueChange = {
-                    username = it
-                    if (errorText != null) errorText = null
-                },
-                placeholder = stringResource(R.string.auth_username_placeholder),
-                icon = Icons.Filled.Person,
-                enabled = !loading,
-                imeAction = ImeAction.Next,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            AuthLabeledField(
-                label = stringResource(R.string.auth_label_password),
-                value = password,
-                onValueChange = {
-                    password = it
-                    if (errorText != null) errorText = null
-                },
-                placeholder = stringResource(R.string.auth_password_placeholder),
-                icon = Icons.Filled.Lock,
-                enabled = !loading,
-                isPassword = true,
-                passwordVisible = passwordVisible,
-                onTogglePassword = { passwordVisible = !passwordVisible },
-                imeAction = ImeAction.Done,
-                onImeAction = submit,
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start,
-            ) {
-                AuthInlineLink(
-                    text = stringResource(R.string.auth_forgot_link),
-                    enabled = !loading,
-                    onClick = onForgotPassword,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            AuthPrimaryButton(
-                text = stringResource(R.string.auth_login_action),
-                loading = loading,
-                loadingText = stringResource(R.string.auth_entering),
-                onClick = submit,
-            )
-
-            Spacer(modifier = Modifier.height(22.dp))
-
-            HorizontalDivider(thickness = 1.dp, color = colors.hairline)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.auth_no_account),
-                    fontSize = 13.sp,
-                    color = colors.muted,
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                AuthInlineLink(
-                    text = stringResource(R.string.auth_free_register),
-                    enabled = !loading,
-                    onClick = onGoRegister,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-        }
     }
 }

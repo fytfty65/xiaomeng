@@ -1,6 +1,5 @@
 package com.omniroute.app.feature.auth
 
-import android.app.Activity
 import android.graphics.BitmapFactory
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -15,7 +14,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +26,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -45,14 +42,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -81,12 +76,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -97,7 +90,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
 import com.omniroute.app.R
 import com.omniroute.app.core.ui.components.OmniLogoMark
 import com.omniroute.app.core.ui.theme.JourneySeason
@@ -424,81 +416,6 @@ internal fun FeatureRow(icon: ImageVector, title: String, subtitle: String) {
     }
 }
 
-// ============================================================================
-// Web 端「森系」登录视觉（2026-11-16）
-//
-// 对齐 http://118.178.237.166：暖米白纸面 + 墨绿主色 + 宋体大标题 + 秋景大图。
-// 这套色只在登录/注册两页使用，其余页面继续走 AppPalette 的暖橙体系，
-// 因此单独定义而非改动全局主题，避免波及已完成的其它模块。
-// ============================================================================
-
-@Immutable
-internal data class AuthWebColors(
-    val page: Color,
-    val card: Color,
-    val heading: Color,
-    val body: Color,
-    val muted: Color,
-    val primary: Color,
-    val onPrimary: Color,
-    val fieldBg: Color,
-    val fieldBorder: Color,
-    val hairline: Color,
-    val heroInk: Color,
-    val heroMuted: Color,
-    val link: Color,
-)
-
-private val LightAuthWebColors = AuthWebColors(
-    page = Color(0xFFFFFAF3),
-    card = Color(0xFFFAF9F4),
-    heading = Color(0xFF263B33),
-    body = Color(0xFF352E32),
-    muted = Color(0xFF6F6A63),
-    primary = Color(0xFF294837),
-    onPrimary = Color(0xFFFFF8E8),
-    fieldBg = Color(0xFFFFFDF8),
-    fieldBorder = Color(0xFFDED7C9),
-    hairline = Color(0xFFE2DBCC),
-    heroInk = Color(0xFFFFF8ED),
-    heroMuted = Color(0xD9FFF8ED),
-    link = Color(0xFF3E6B54),
-)
-
-private val DarkAuthWebColors = AuthWebColors(
-    page = Color(0xFF101613),
-    card = Color(0xFF18201C),
-    heading = Color(0xFFF0EADE),
-    body = Color(0xFFE6E0D4),
-    muted = Color(0xFFA9B1A9),
-    primary = Color(0xFF5C8F6F),
-    onPrimary = Color(0xFF0E1712),
-    fieldBg = Color(0xFF1E2723),
-    fieldBorder = Color(0xFF33413A),
-    hairline = Color(0xFF2B362F),
-    heroInk = Color(0xFFFFF8ED),
-    heroMuted = Color(0xB3FFF8ED),
-    link = Color(0xFF8FC0A2),
-)
-
-@Composable
-internal fun authWebColors(): AuthWebColors =
-    if (isSystemInDarkTheme()) DarkAuthWebColors else LightAuthWebColors
-
-/** 登录/注册页顶部压着深色秋景图，状态栏图标必须转成浅色才看得见。 */
-@Composable
-internal fun AuthLightStatusBarIcons() {
-    val view = LocalView.current
-    if (view.isInEditMode) return
-    val window = (view.context as? Activity)?.window ?: return
-    DisposableEffect(window) {
-        val controller = WindowCompat.getInsetsController(window, view)
-        val previous = controller.isAppearanceLightStatusBars
-        controller.isAppearanceLightStatusBars = false
-        onDispose { controller.isAppearanceLightStatusBars = previous }
-    }
-}
-
 // —— 四季封面（对齐 Web 端 /hero/v5/*）——
 // Web 端每个季节一张 960×540 图，切换时 2s 淡入；再叠 sunlight（18s 明暗呼吸）
 // 与 fogDrift（28s 缓慢漂移）两层动效。这里用 Crossfade + 无限动画复刻同一节奏。
@@ -529,9 +446,6 @@ internal enum class HeroSeason(
 
 /** 季节主题 -> 封面季别，供登录后的页面复用同一套四季插画与动效。 */
 internal fun JourneySeason.heroSeason(): HeroSeason = HeroSeason.fromKey(key)
-
-/** 每季停留时长；没被手动指定时到点自动切下一季。 */
-private const val HeroSeasonHoldMillis = 9_000L
 
 // 封面原图尺寸与秋千裁剪框；数字与 drawable 里 swing_*.webp 的导出参数一一对应。
 private const val HeroSourceWidth = 960f
@@ -800,426 +714,4 @@ private fun SeasonAmbience(season: HeroSeason) {
             }
         }
     }
-}
-
-
-/** 顶部四季封面：品牌行压在图上，宋体标题与四季胶囊落在底部。 */
-@Composable
-internal fun AuthHero(
-    eyebrow: String,
-    title: String,
-    height: Dp = 320.dp,
-    initialSeason: HeroSeason = HeroSeason.ofCurrentMonth(),
-    // 当前展示的季节变化时上报，应用据此切换全局季节配色。
-    onSeasonChanged: (HeroSeason) -> Unit = {},
-    topBar: @Composable () -> Unit,
-) {
-    val colors = authWebColors()
-    var seasonIndex by rememberSaveable { mutableIntStateOf(initialSeason.ordinal) }
-    // 用户手动点过胶囊就不再自动换季，避免「刚选完又自己跳走」。
-    var autoPlay by rememberSaveable { mutableStateOf(true) }
-    LaunchedEffect(autoPlay, seasonIndex) {
-        onSeasonChanged(HeroSeason.values()[seasonIndex])
-        if (!autoPlay) return@LaunchedEffect
-        delay(HeroSeasonHoldMillis)
-        seasonIndex = (seasonIndex + 1) % HeroSeason.values().size
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(height),
-    ) {
-        SeasonHeroImage(season = HeroSeason.values()[seasonIndex])
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(
-                    Brush.verticalGradient(
-                        // 顶部压暗保证状态栏与品牌行可读；底部轻压一层让暖白标题压得住画面。
-                        // 不做「渐隐到纸面色」，否则标题会被洗白（实测第二行几乎看不见）。
-                        0f to Color.Black.copy(alpha = 0.45f),
-                        0.30f to Color.Black.copy(alpha = 0.10f),
-                        0.62f to Color.Transparent,
-                        1f to Color.Black.copy(alpha = 0.30f),
-                    ),
-                ),
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(horizontal = 24.dp)
-                .padding(top = 12.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            topBar()
-            Column {
-                Text(
-                    text = eyebrow,
-                    fontSize = 9.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 2.2.sp,
-                    color = colors.heroMuted,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = title,
-                    fontFamily = FontFamily.Serif,
-                    fontSize = 27.sp,
-                    lineHeight = 39.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.heroInk,
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                AuthSeasonPills(
-                    selected = HeroSeason.values()[seasonIndex],
-                    onSelect = { picked ->
-                        autoPlay = false
-                        seasonIndex = picked.ordinal
-                    },
-                )
-            }
-        }
-    }
-}
-
-/** 四季胶囊：点哪季就淡入哪季，切换仍走 2s 交叉淡入。 */
-@Composable
-private fun AuthSeasonPills(
-    selected: HeroSeason,
-    onSelect: (HeroSeason) -> Unit,
-) {
-    val colors = authWebColors()
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        HeroSeason.values().forEach { season ->
-            val isSelected = season == selected
-            val shape = RoundedCornerShape(50)
-            Box(
-                modifier = Modifier
-                    .clip(shape)
-                    .background(if (isSelected) colors.heroInk.copy(alpha = 0.94f) else Color.Transparent)
-                    .border(
-                        width = 1.dp,
-                        color = if (isSelected) Color.Transparent else colors.heroInk.copy(alpha = 0.45f),
-                        shape = shape,
-                    )
-                    .clickable(role = Role.Button) { onSelect(season) }
-                    .padding(horizontal = 13.dp, vertical = 5.dp),
-            ) {
-                Text(
-                    text = stringResource(season.labelRes),
-                    fontSize = 11.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) colors.heading else colors.heroInk,
-                )
-            }
-        }
-    }
-}
-
-/** 图上品牌行：左侧 Logo + 名称，右侧一个描边胶囊入口。 */
-@Composable
-internal fun AuthHeroBrand(
-    trailingText: String? = null,
-    onTrailingClick: (() -> Unit)? = null,
-) {
-    val colors = authWebColors()
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OmniLogoMark(size = 34.dp)
-            Spacer(modifier = Modifier.width(11.dp))
-            Column {
-                Text(
-                    text = "OmniRoute",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.2.sp,
-                    color = colors.heroInk,
-                )
-                Text(
-                    text = stringResource(R.string.auth_brand_tagline),
-                    fontSize = 11.sp,
-                    color = colors.heroMuted,
-                )
-            }
-        }
-        if (trailingText != null && onTrailingClick != null) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .border(1.dp, colors.heroInk.copy(alpha = 0.55f), RoundedCornerShape(50))
-                    .clickable(role = Role.Button, onClick = onTrailingClick)
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
-            ) {
-                Text(
-                    text = trailingText,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.heroInk,
-                )
-            }
-        }
-    }
-}
-
-/** 纸面卡片：接在 Hero 下方，顶部圆角，内部独立滚动。 */
-@Composable
-internal fun AuthPaperCard(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val colors = authWebColors()
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
-        color = colors.card,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .imePadding()
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            content = content,
-        )
-    }
-}
-
-/** 卡片顶部的「OmniRoute / 旅行者账号」小标识行。 */
-@Composable
-internal fun AuthCardBrandLine() {
-    val colors = authWebColors()
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        OmniLogoMark(size = 18.dp)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "OmniRoute",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = colors.heading,
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = stringResource(R.string.auth_account_kind),
-            fontSize = 12.sp,
-            color = colors.muted,
-        )
-    }
-}
-
-/** 登录/注册切换：Web 端的下划线式 Tab，而非分段胶囊。 */
-@Composable
-internal fun AuthWebTabs(
-    registerSelected: Boolean,
-    onLogin: () -> Unit,
-    onRegister: () -> Unit,
-) {
-    val colors = authWebColors()
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            WebTab(
-                text = stringResource(R.string.auth_tab_login_short),
-                selected = !registerSelected,
-                onClick = onLogin,
-            )
-            WebTab(
-                text = stringResource(R.string.auth_tab_register_short),
-                selected = registerSelected,
-                onClick = onRegister,
-            )
-        }
-        HorizontalDivider(thickness = 1.dp, color = colors.hairline)
-    }
-}
-
-@Composable
-private fun WebTab(text: String, selected: Boolean, onClick: () -> Unit) {
-    val colors = authWebColors()
-    Text(
-        text = text,
-        fontSize = 15.sp,
-        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-        color = if (selected) colors.heading else colors.muted,
-        modifier = Modifier
-            .clickable(enabled = !selected, role = Role.Tab, onClick = onClick)
-            .drawBehind {
-                if (selected) {
-                    val y = size.height - 1.dp.toPx()
-                    drawLine(
-                        color = colors.heading,
-                        start = androidx.compose.ui.geometry.Offset(0f, y),
-                        end = androidx.compose.ui.geometry.Offset(size.width, y),
-                        strokeWidth = 2.dp.toPx(),
-                    )
-                }
-            }
-            .padding(top = 8.dp, bottom = 12.dp, end = 2.dp),
-    )
-}
-
-/** 带标签的输入框：标签在框上方，框内只留图标与占位文案。 */
-@Composable
-internal fun AuthLabeledField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    icon: ImageVector,
-    enabled: Boolean = true,
-    isPassword: Boolean = false,
-    passwordVisible: Boolean = false,
-    onTogglePassword: (() -> Unit)? = null,
-    imeAction: ImeAction = ImeAction.Next,
-    onImeAction: () -> Unit = {},
-) {
-    val colors = authWebColors()
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = colors.muted,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = enabled,
-            singleLine = true,
-            shape = RoundedCornerShape(10.dp),
-            textStyle = TextStyle(fontSize = 15.sp, color = colors.body),
-            visualTransformation = if (isPassword && !passwordVisible) {
-                PasswordVisualTransformation()
-            } else {
-                VisualTransformation.None
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text,
-                imeAction = imeAction,
-            ),
-            keyboardActions = KeyboardActions(onDone = { onImeAction() }, onNext = { onImeAction() }),
-            leadingIcon = {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = colors.muted.copy(alpha = 0.85f),
-                    modifier = Modifier.size(18.dp),
-                )
-            },
-            trailingIcon = if (isPassword && onTogglePassword != null) {
-                {
-                    Text(
-                        text = stringResource(if (passwordVisible) R.string.auth_hide else R.string.auth_show),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = colors.link,
-                        modifier = Modifier
-                            .clickable(enabled = enabled, role = Role.Button, onClick = onTogglePassword)
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                    )
-                }
-            } else {
-                null
-            },
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    fontSize = 14.sp,
-                    color = colors.muted.copy(alpha = 0.7f),
-                )
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = colors.fieldBg,
-                unfocusedContainerColor = colors.fieldBg,
-                disabledContainerColor = colors.fieldBg,
-                focusedBorderColor = colors.primary,
-                unfocusedBorderColor = colors.fieldBorder,
-                disabledBorderColor = colors.fieldBorder,
-                cursorColor = colors.primary,
-                focusedTextColor = colors.body,
-                unfocusedTextColor = colors.body,
-                disabledTextColor = colors.body.copy(alpha = 0.6f),
-                focusedPlaceholderColor = colors.muted,
-                unfocusedPlaceholderColor = colors.muted,
-            ),
-        )
-    }
-}
-
-/** 墨绿实心主按钮：无渐变无阴影，与 Web 端一致。 */
-@Composable
-internal fun AuthPrimaryButton(
-    text: String,
-    loading: Boolean,
-    loadingText: String,
-    onClick: () -> Unit,
-) {
-    val colors = authWebColors()
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (loading) colors.primary.copy(alpha = 0.75f) else colors.primary)
-            .clickable(enabled = !loading, role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(17.dp),
-                    strokeWidth = 2.dp,
-                    color = colors.onPrimary,
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = loadingText,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.onPrimary,
-                )
-            } else {
-                Text(
-                    text = text,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.onPrimary,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = colors.onPrimary,
-                    modifier = Modifier.size(17.dp),
-                )
-            }
-        }
-    }
-}
-
-/** 卡片内的友情链接（忘记密码 / 去注册 / 去登录）。 */
-@Composable
-internal fun AuthInlineLink(
-    text: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    val colors = authWebColors()
-    Text(
-        text = text,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Medium,
-        color = colors.link,
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(vertical = 4.dp),
-    )
 }

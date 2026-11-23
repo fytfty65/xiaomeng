@@ -30,6 +30,9 @@ import kotlinx.coroutines.withContext
 
 internal enum class PlanPhase { FORM, RUNNING, DONE, FAILED }
 
+internal const val QUICK_PLAN_CITY = "quickCity"
+internal const val QUICK_PLAN_DAYS = "quickDays"
+
 internal data class StageEntry(val label: String, val detail: String)
 
 /**
@@ -114,6 +117,13 @@ internal class PlanningViewModel(
     val events: SharedFlow<PlanningEvent> = _events.asSharedFlow()
 
     init {
+        if (handle.get<String>(QUICK_PLAN_CITY) != null &&
+            handle.get<Boolean>("autostart") != false &&
+            handle.get<Boolean>(KEY_QUICK_STARTED) != true
+        ) {
+            handle[KEY_QUICK_STARTED] = true
+            submit()
+        }
         // 恢复出来的结果需要重建候选详情快照，否则点卡片会落到「方案已过期」。
         _state.value.result?.let { putCandidateDetails(it) }
         viewModelScope.launch {
@@ -643,6 +653,14 @@ internal class PlanningViewModel(
         val restored = restorePersisted()
         if (restored != null) return restored
 
+        handle.get<String>(QUICK_PLAN_CITY)?.let { city ->
+            return PlanningUiState(
+                destination = city,
+                days = handle.get<Int>(QUICK_PLAN_DAYS)?.coerceIn(1, 30) ?: 3,
+                room = container.roomRepository.currentRoom(),
+            )
+        }
+
         val prefill = PlanningPrefill.consume()
         return PlanningUiState(
             destination = prefill?.first.orEmpty(),
@@ -699,6 +717,7 @@ internal class PlanningViewModel(
 
     companion object {
         private const val KEY_STATE = "planning_state"
+        private const val KEY_QUICK_STARTED = "quick_plan_started"
         private const val MILLIS_PER_DAY = 86_400_000L
     }
 }
@@ -774,4 +793,3 @@ private fun PlanningUiState.toPersisted(): PersistedPlanningState {
         hasUnsavedEdits = hasUnsavedEdits,
     )
 }
-

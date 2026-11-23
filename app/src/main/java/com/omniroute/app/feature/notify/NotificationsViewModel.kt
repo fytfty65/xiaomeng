@@ -29,6 +29,7 @@ internal data class NotificationsUiState(
     val pushBusy: Boolean = false,
     val pushCities: List<String> = emptyList(),
     val pushNotice: String? = null,
+    val lastCheckedAt: Long? = null,
 )
 
 /**
@@ -121,6 +122,7 @@ internal class NotificationsViewModel(
                     it.copy(
                         pushBusy = false,
                         pushNotice = context.getString(R.string.notify_push_checked, items.size),
+                        lastCheckedAt = System.currentTimeMillis(),
                     )
                 }
                 load()

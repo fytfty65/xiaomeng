@@ -1,5 +1,10 @@
 package com.omniroute.app.core.ui.components
 
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
+import com.omniroute.app.core.ui.theme.EditionSurface
+import androidx.compose.foundation.layout.FlowRow
 import com.omniroute.app.core.ui.theme.LocalAppPalette
 
 import android.content.Context
@@ -47,13 +52,13 @@ fun ItineraryDayCard(
     day: TripItinerary.Day,
     modifier: Modifier = Modifier,
     isBooked: (TripItinerary.Item) -> Boolean = { false },
+    showEstimatedNote: Boolean = true,
     onItemClick: ((TripItinerary.Item) -> Unit)? = null,
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
         // 跟随主题语义面底，深色模式下不再出现刺眼的白卡。
-        color = LocalAppPalette.current.surface,
-        border = BorderStroke(1.dp, CardBorder),
+        color = EditionSurface,
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -104,19 +109,29 @@ fun ItineraryDayCard(
                 return@Column
             }
 
-            day.items.forEachIndexed { index, item ->
-                if (index == 0) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                } else {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = LocalAppPalette.current.divider, thickness = 1.dp)
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-                ItineraryItemRow(
-                    item = item,
-                    isBooked = isBooked(item),
-                    onItemClick = onItemClick,
+            if (showEstimatedNote && day.items.any { it.isEstimated && it.priceLabel != null }) {
+                Text(
+                    text = stringResource(R.string.itinerary_estimated),
+                    fontSize = 11.sp,
+                    color = Muted,
+                    modifier = Modifier.padding(top = 6.dp),
                 )
+            }
+            val track = BrandOrange
+            Column(Modifier.fillMaxWidth().padding(top = 8.dp).drawBehind {
+                drawLine(
+                    track.copy(alpha = 0.28f), Offset(5.dp.toPx(), 10.dp.toPx()),
+                    Offset(5.dp.toPx(), size.height - 9.dp.toPx()), 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())),
+                )
+            }) {
+                day.items.forEach { item ->
+                    Row(Modifier.padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
+                        Box(Modifier.padding(start = 2.dp, top = 8.dp, end = 8.dp).size(6.dp)
+                            .clip(CircleShape).background(track))
+                        ItineraryItemRow(item, isBooked(item), onItemClick)
+                    }
+                }
             }
         }
     }
@@ -182,7 +197,7 @@ private fun ItineraryItemRow(
             val meta = buildItemMeta(context, item)
             if (meta.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     meta.forEach { part ->
                         Text(text = part, fontSize = 12.sp, color = Muted)
                     }
@@ -218,9 +233,6 @@ private fun buildItemMeta(context: Context, item: TripItinerary.Item): List<Stri
     val priceLabel = item.priceLabel
     if (priceLabel != null) {
         parts.add(priceLabel)
-    }
-    if (item.isEstimated) {
-        parts.add(context.getString(R.string.itinerary_estimated))
     }
     return parts
 }

@@ -1,5 +1,15 @@
 package com.omniroute.app.feature.community
 
+import com.omniroute.app.core.planning.PlanRequest
+import com.omniroute.app.core.ui.components.SeasonArtwork
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.edition
+import com.omniroute.app.core.ui.theme.EditionSurface
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontFamily
+import com.omniroute.app.core.ui.theme.seasonBackdrop
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -69,6 +79,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun CommunityScreen(
     container: AppContainer,
+    onUsePlan: (String, Int) -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -88,6 +99,7 @@ fun CommunityScreen(
         BackHandler { viewModel.closePost() }
         PostDetail(
             state = state,
+            onUsePlan = onUsePlan,
             onBack = viewModel::closePost,
             onLike = viewModel::toggleLike,
             onFavorite = viewModel::toggleFavorite,
@@ -96,6 +108,7 @@ fun CommunityScreen(
     } else {
         Feed(
             state = state,
+            onUsePlan = onUsePlan,
             onBack = onBack,
             onRefresh = viewModel::loadFeed,
             onSelectTag = viewModel::selectTag,
@@ -119,6 +132,7 @@ fun CommunityScreen(
 @Composable
 private fun Feed(
     state: CommunityUiState,
+    onUsePlan: (String, Int) -> Unit,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
     onSelectTag: (String) -> Unit,
@@ -133,7 +147,7 @@ private fun Feed(
         state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .seasonBackdrop()
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .wheelScroll(listState),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -243,6 +257,7 @@ private fun Feed(
         items(state.posts, key = { "post_${it.id}" }) { post ->
             PostCard(
                 post = post,
+                onUsePlan = onUsePlan,
                 liked = post.id in state.likedIds,
                 busy = post.id in state.busyIds,
                 onClick = { onOpenPost(post) },
@@ -256,6 +271,7 @@ private fun Feed(
 @Composable
 private fun PostCard(
     post: CommunityPostUi,
+    onUsePlan: (String, Int) -> Unit,
     liked: Boolean,
     busy: Boolean,
     onClick: () -> Unit,
@@ -263,106 +279,129 @@ private fun PostCard(
     onFavorite: () -> Unit,
 ) {
     val palette = LocalAppPalette.current
+    val style = LocalJourneySeason.current.edition
+    val preview = remember(post.content) { readPostPreview(post.content) }
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = palette.surface,
-        border = BorderStroke(1.dp, palette.border),
+        color = EditionSurface,
         modifier = Modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick),
     ) {
-        Column(modifier = Modifier.padding(15.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RemoteAvatar(
-                    path = post.avatarUrl,
-                    fallback = post.author.take(1).uppercase(),
-                    size = 34.dp,
-                    background = palette.brandTint,
-                    foreground = palette.brand,
-                    fontSize = 14.sp,
-                    contentDescription = null,
-                )
-                Spacer(modifier = Modifier.width(9.dp))
-                Column(modifier = Modifier.weight(1f)) {
+        Column {
+            SeasonArtwork(Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0x99142026)))))
+                if (post.city.isNotBlank()) {
                     Text(
-                        text = post.author,
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = palette.ink,
-                    )
-                    Text(
-                        text = listOf(post.city, post.createdAt.take(10))
-                            .filter { it.isNotBlank() }
-                            .joinToString(" · "),
-                        fontSize = 10.5.sp,
-                        color = palette.muted,
+                        post.city, modifier = Modifier.align(Alignment.BottomStart).padding(14.dp),
+                        color = Color.White, fontFamily = style.titleFont, fontWeight = style.titleWeight, fontSize = 20.sp,
                     )
                 }
             }
+            Column(Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RemoteAvatar(
+                        path = post.avatarUrl,
+                        fallback = post.author.take(1).uppercase(),
+                        size = 34.dp,
+                        background = palette.brandTint,
+                        foreground = palette.brand,
+                        fontSize = 14.sp,
+                        contentDescription = null,
+                    )
+                    Spacer(modifier = Modifier.width(9.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = post.author,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = palette.ink,
+                        )
+                        Text(
+                            text = listOf(post.city, post.createdAt.take(10))
+                                .filter { it.isNotBlank() }
+                                .joinToString(" · "),
+                            fontSize = 10.5.sp,
+                            color = palette.muted,
+                        )
+                    }
+                }
 
-            if (post.title.isNotBlank()) {
-                Spacer(modifier = Modifier.height(9.dp))
-                Text(
-                    text = post.title,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = palette.ink,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (post.content.isNotBlank()) {
-                Spacer(modifier = Modifier.height(5.dp))
-                Text(
-                    text = post.content,
-                    fontSize = 12.5.sp,
-                    color = palette.ink.copy(alpha = 0.82f),
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (post.tags.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(9.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    post.tags.take(4).forEach { tag ->
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(palette.tagBg)
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                        ) {
-                            Text(text = "#$tag", fontSize = 10.sp, color = palette.muted)
+                if (post.title.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(9.dp))
+                    Text(
+                        text = post.title,
+                        fontSize = 19.sp,
+                        fontFamily = style.titleFont,
+                        fontWeight = style.titleWeight,
+                        color = palette.ink,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (post.city.isNotBlank() && PlanRequest.isSupportedDestination(post.city) && preview.stops.isNotEmpty()) {
+                    TextButton(onClick = { onUsePlan(post.city, preview.days ?: 3) }) {
+                        Text("套用行程", fontSize = 12.sp)
+                    }
+                }
+                if (preview.summary.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = preview.summary,
+                        fontSize = 12.5.sp,
+                        color = palette.ink.copy(alpha = 0.82f),
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (preview.stops.isNotEmpty()) {
+                    Spacer(Modifier.height(9.dp))
+                    Text(preview.stops.joinToString("  ─  "), color = palette.brand, fontSize = 11.sp, lineHeight = 17.sp)
+                }
+                if (post.tags.isNotEmpty() || preview.days != null) {
+                    Spacer(modifier = Modifier.height(9.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        val tags = listOfNotNull(preview.days?.let { "$it 天" }) + post.tags.take(4).map { "#$it" }
+                        tags.forEach { tag ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(palette.tagBg)
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                            ) {
+                                Text(text = tag, fontSize = 10.sp, color = palette.muted)
+                            }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                CountAction(
-                    text = stringResource(R.string.community_like),
-                    count = post.likes,
-                    active = liked,
-                    enabled = !busy,
-                    onClick = onLike,
-                )
-                CountAction(
-                    text = stringResource(
-                        if (post.favorited) R.string.community_favorited
-                        else R.string.community_favorite,
-                    ),
-                    count = post.favorites,
-                    active = post.favorited,
-                    enabled = !busy,
-                    onClick = onFavorite,
-                )
-                CountAction(
-                    text = stringResource(R.string.community_comments),
-                    count = post.commentCount,
-                    active = false,
-                    enabled = true,
-                    onClick = onClick,
-                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    CountAction(
+                        text = stringResource(R.string.community_like),
+                        count = post.likes,
+                        active = liked,
+                        enabled = !busy,
+                        onClick = onLike,
+                    )
+                    CountAction(
+                        text = stringResource(
+                            if (post.favorited) R.string.community_favorited
+                            else R.string.community_favorite,
+                        ),
+                        count = post.favorites,
+                        active = post.favorited,
+                        enabled = !busy,
+                        onClick = onFavorite,
+                    )
+                    CountAction(
+                        text = stringResource(R.string.community_comments),
+                        count = post.commentCount,
+                        active = false,
+                        enabled = true,
+                        onClick = onClick,
+                    )
+                }
             }
         }
     }
@@ -371,6 +410,7 @@ private fun PostCard(
 @Composable
 private fun PostDetail(
     state: CommunityUiState,
+    onUsePlan: (String, Int) -> Unit,
     onBack: () -> Unit,
     onLike: (CommunityPostUi) -> Unit,
     onFavorite: (CommunityPostUi) -> Unit,
@@ -383,7 +423,7 @@ private fun PostDetail(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .seasonBackdrop()
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         Row(
@@ -423,6 +463,7 @@ private fun PostDetail(
             item(key = "post") {
                 PostCard(
                     post = post,
+                    onUsePlan = onUsePlan,
                     liked = post.id in state.likedIds,
                     busy = post.id in state.busyIds,
                     onClick = {},

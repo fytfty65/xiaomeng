@@ -28,6 +28,7 @@ internal data class ProfileUiState(
     val loadingProfile: Boolean = true,
     val profileError: String? = null,
     val tripCount: Int = 0,
+    val cityCount: Int? = null,
     val tripCountError: Boolean = false,
     val editing: Boolean = false,
     val nicknameDraft: String = "",
@@ -100,10 +101,11 @@ internal class ProfileViewModel(
     fun loadTripCount() {
         viewModelScope.launch {
             val outcome = withContext(Dispatchers.IO) {
-                runCatching { container.planningRepository.listTrips().size }
+                runCatching { container.planningRepository.listTrips() }
             }
-            outcome.onSuccess { count ->
-                _state.update { it.copy(tripCount = count, tripCountError = false) }
+            outcome.onSuccess { trips ->
+                val cityCount = trips.mapNotNull { trip -> trip.destCity?.trim()?.takeIf(String::isNotEmpty) }.distinct().size
+                _state.update { it.copy(tripCount = trips.size, cityCount = cityCount, tripCountError = false) }
             }.onFailure {
                 _state.update { it.copy(tripCountError = true) }
             }

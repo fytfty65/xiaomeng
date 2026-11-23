@@ -1,5 +1,21 @@
 package com.omniroute.app.feature.gallery
 
+import com.omniroute.app.core.ui.SystemBarIcons
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.foundation.layout.offset
+import com.omniroute.app.core.ui.components.SeasonArtwork
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.edition
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,9 +40,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -167,7 +180,7 @@ private fun GalleryContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background)
+            .seasonBackdrop()
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         Row(
@@ -196,7 +209,7 @@ private fun GalleryContent(
                     color = palette.muted,
                 )
             }
-            if (state.enabled) {
+            if (state.enabled && state.photos.isNotEmpty()) {
                 AddButton(onClick = onPick)
             }
         }
@@ -236,26 +249,14 @@ private fun GalleryContent(
                 CircularProgressIndicator(color = palette.brand)
             }
         } else if (state.photos.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 40.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.gallery_empty),
-                    fontSize = 13.sp,
-                    color = palette.muted,
-                    textAlign = TextAlign.Center,
-                )
-            }
+            GalleryEmpty(enabled = state.enabled, onPick = onPick)
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
+            LazyVerticalStaggeredGrid(
+                columns = StaggeredGridCells.Adaptive(140.dp),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 30.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                verticalItemSpacing = 14.dp,
             ) {
                 items(state.photos, key = { it.id }) { photo ->
                     PhotoCell(
@@ -270,17 +271,43 @@ private fun GalleryContent(
 }
 
 @Composable
+private fun GalleryEmpty(enabled: Boolean, onPick: () -> Unit) {
+    val palette = LocalAppPalette.current
+    val style = LocalJourneySeason.current.edition
+    Box(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(11.dp)) {
+            Box(Modifier.widthIn(max = 288.dp).fillMaxWidth().height(168.dp), contentAlignment = Alignment.Center) {
+                listOf(-15f, 13f, -3f).forEachIndexed { index, angle ->
+                    val alignment = listOf(Alignment.CenterStart, Alignment.CenterEnd, Alignment.Center)[index]
+                    Surface(
+                        modifier = Modifier.align(alignment).rotate(angle).width(116.dp),
+                        shape = RoundedCornerShape(7.dp), color = palette.surface, shadowElevation = 6.dp,
+                    ) {
+                        Column(Modifier.padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 20.dp)) {
+                            SeasonArtwork(Modifier.fillMaxWidth().height(104.dp).clip(RoundedCornerShape(4.dp)), portrait = index == 2)
+                        }
+                    }
+                }
+            }
+            Text("第一帧旅途光影", fontFamily = style.titleFont, fontWeight = style.titleWeight, color = palette.ink, fontSize = 24.sp)
+            Text(stringResource(R.string.gallery_empty), color = palette.muted, textAlign = TextAlign.Center, fontSize = 13.sp)
+            if (enabled) AddButton(onClick = onPick)
+        }
+    }
+}
+
+@Composable
 private fun PhotoCell(
     photo: GalleryPhotoUi,
     viewModel: GalleryViewModel,
     onClick: () -> Unit,
 ) {
     val palette = LocalAppPalette.current
-    Column {
+    Column(Modifier.clip(RoundedCornerShape(7.dp)).background(palette.surface).padding(5.dp)) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f)
+                .aspectRatio(if (photo.id.hashCode() and 1 == 0) 0.82f else 1.13f)
                 .clip(RoundedCornerShape(12.dp))
                 .background(palette.fieldBg)
                 .clickable(role = Role.Button, onClick = onClick),
@@ -315,7 +342,7 @@ private fun PhotoCell(
             StatusBadge(
                 status = photo.status,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
+                    .align(Alignment.TopStart)
                     .padding(6.dp),
             )
         }
@@ -328,6 +355,11 @@ private fun PhotoCell(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        val date = photo.createdAt.take(10)
+        if (date.isNotBlank()) {
+            Text(date, fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = palette.muted,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 3.dp))
+        }
         if (photo.status == STATUS_REJECTED && photo.rejectReason != null) {
             Text(
                 text = stringResource(R.string.gallery_reject_reason, photo.rejectReason),
@@ -376,11 +408,12 @@ private fun PhotoViewer(
     onClose: () -> Unit,
     onRequestDelete: (GalleryPhotoUi) -> Unit,
 ) {
+    SystemBarIcons(darkIcons = false)
     val palette = LocalAppPalette.current
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(Brush.radialGradient(listOf(LocalJourneySeason.current.edition.deep, Color(0xFF111218)))),
     ) {
         val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
             initialValue = null,
@@ -392,6 +425,9 @@ private fun PhotoViewer(
         }
         val bitmap = image
         if (bitmap != null) {
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                Image(bitmap, null, modifier = Modifier.fillMaxSize().blur(28.dp).alpha(0.22f), contentScale = ContentScale.Crop)
+            }
             Image(
                 bitmap = bitmap,
                 contentDescription = photo.nodeName.ifBlank {

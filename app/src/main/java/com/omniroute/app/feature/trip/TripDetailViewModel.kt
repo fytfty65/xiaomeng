@@ -1,5 +1,8 @@
 package com.omniroute.app.feature.trip
 
+import com.omniroute.app.core.network.dto.BudgetSummaryDto
+import com.omniroute.app.core.network.dto.ExecutionSummaryDto
+import kotlinx.coroutines.Job
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -29,6 +32,8 @@ import kotlinx.coroutines.withContext
 internal data class TripDetailUiState(
     val bookingMarks: TripBookingStore.Marks,
     val trip: TripPlanDto? = null,
+    val journeyProgress: ExecutionSummaryDto? = null,
+    val budgetProgress: BudgetSummaryDto? = null,
     val loading: Boolean = true,
     val errorText: String? = null,
     val renameOpen: Boolean = false,
@@ -64,6 +69,7 @@ internal class TripDetailViewModel(
 
     private val gson = Gson()
     private val bookingStore = TripBookingStore(context)
+    private var toolsJob: Job? = null
 
     /** 进程重建后动作面板的目标节点只存名称，等行程拉回后再从 content 解析。 */
     private var pendingActionItemName: String? = null
@@ -100,6 +106,19 @@ internal class TripDetailViewModel(
                         )
                     }
                 }
+        }
+    }
+
+    fun refreshTools() {
+        if (tripId.isBlank()) return
+        toolsJob?.cancel()
+        toolsJob = viewModelScope.launch {
+            val (journey, budget) = withContext(Dispatchers.IO) {
+                val execution = runCatching { container.planningRepository.journeyState(tripId).execution }.getOrNull()
+                val ledger = runCatching { container.budgetRepository.summary(tripId) }.getOrNull()
+                execution to ledger
+            }
+            _state.update { it.copy(journeyProgress = journey, budgetProgress = budget) }
         }
     }
 

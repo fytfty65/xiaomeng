@@ -1,5 +1,6 @@
 package com.omniroute.app.feature.plan
 
+import com.omniroute.app.core.ui.theme.seasonBackdrop
 import androidx.compose.material3.minimumInteractiveComponentSize
 
 import android.graphics.Bitmap
@@ -197,7 +198,7 @@ fun PlanningScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CreamBg),
+            .seasonBackdrop(),
         contentAlignment = Alignment.TopCenter,
     ) {
         // 平板/扩展屏上限制正文宽度；结果页内部再按 Window Size Class 切换双栏。
@@ -433,4 +434,3 @@ private fun PlanningTopBar(
         }
     }
 }
-

@@ -1,5 +1,23 @@
 package com.omniroute.app.feature.plan
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.List
+import com.omniroute.app.core.ui.theme.JourneySeason
+import androidx.compose.ui.text.font.FontFamily
+import com.omniroute.app.core.ui.theme.OmniSeasonLogo
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.EditionSurface
+import com.omniroute.app.core.ui.theme.edition
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.graphics.Brush
 import android.content.Context
 import androidx.compose.material3.minimumInteractiveComponentSize
 
@@ -99,23 +117,23 @@ private fun ChatIdeaCard(
     onApply: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    val season = LocalJourneySeason.current
+    val style = season.edition
+    val seasonExamples = when (season) {
+        JourneySeason.Spring -> listOf("婺源看油菜花，3天", "杭州沿西湖散步，2天", "林芝赏桃花，4天")
+        JourneySeason.Summer -> listOf("青岛看海，3天", "威海沿海骑行，2天", "舟山海鲜之旅，3天")
+        JourneySeason.Autumn -> listOf("阿尔山看秋林，3天", "喀纳斯徒步，4天", "腾冲看银杏，3天")
+        JourneySeason.Winter -> listOf("阿勒泰滑雪，4天慢节奏", "禾木雪景摄影，3天", "长白山看雾凇，3天")
+    }
+    val shape = RoundedCornerShape(18.dp)
     Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = PlanCardBg,
-        border = BorderStroke(1.dp, PlanSubtleBorder),
-        modifier = Modifier.fillMaxWidth(),
+        shape = shape,
+        color = EditionSurface,
+        modifier = Modifier.fillMaxWidth().border(1.2.dp, Brush.horizontalGradient(listOf(style.accent, style.secondary, style.light)), shape),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RoundedCornerShape(50), color = PlanOrangeLightBg) {
-                    Text(
-                        text = "AI",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BrandOrange,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                    )
-                }
+                OmniSeasonLogo(diameter = 28.dp)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.plan_form_chat_title),
@@ -123,8 +141,6 @@ private fun ChatIdeaCard(
                     fontWeight = FontWeight.Bold,
                     color = Ink,
                 )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(text = stringResource(R.string.plan_form_chat_route), fontSize = 12.sp, color = Muted)
             }
 
             Spacer(modifier = Modifier.height(9.dp))
@@ -151,6 +167,16 @@ private fun ChatIdeaCard(
                         .fillMaxWidth()
                         .heightIn(min = 42.dp),
                 )
+            }
+
+            Spacer(Modifier.height(5.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                seasonExamples.forEach { example ->
+                    androidx.compose.material3.SuggestionChip(
+                        onClick = { onTextChange(example) },
+                        label = { Text(example, fontSize = 10.5.sp) },
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(9.dp))
@@ -238,7 +264,7 @@ internal fun FormContent(
     room: RoomSession?,
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        OmniLogoMark(size = 42.dp)
+        OmniSeasonLogo(diameter = 42.dp)
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
@@ -274,8 +300,7 @@ internal fun FormContent(
 
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = PlanCardBg,
-        border = BorderStroke(1.dp, PlanSubtleBorder),
+        color = EditionSurface,
         modifier = Modifier
             .fillMaxWidth()
             .shadow(
@@ -303,6 +328,15 @@ internal fun FormContent(
                 isEssential = false,
                 imeAction = ImeAction.Done,
             )
+            if (destination.isNotBlank() || origin.isNotBlank()) {
+                TextButton(
+                    onClick = {
+                        onDestinationChange(origin)
+                        onOriginChange(destination)
+                    },
+                    modifier = Modifier.align(Alignment.End).padding(end = 8.dp),
+                ) { Text("互换出发地和目的地", fontSize = 12.sp) }
+            }
         }
     }
 
@@ -313,8 +347,7 @@ internal fun FormContent(
 
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = PlanCardBg,
-        border = BorderStroke(1.dp, PlanSubtleBorder),
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
@@ -324,25 +357,24 @@ internal fun FormContent(
                 onClear = onStartDateClear,
             )
             HorizontalDivider(color = PlanFormDivider, thickness = 1.dp)
-            ModernStepperRow(
-                title = stringResource(R.string.plan_form_days_title),
-                subHint = stringResource(R.string.plan_form_days_hint),
-                value = days,
-                unit = stringResource(R.string.plan_form_days_unit),
-                min = 1,
-                max = 30,
-                onChange = onDaysChange,
-            )
-            HorizontalDivider(color = PlanFormDivider, thickness = 1.dp)
-            ModernStepperRow(
-                title = stringResource(R.string.plan_form_travelers_title),
-                subHint = stringResource(R.string.plan_form_travelers_hint),
-                value = travelers,
-                unit = stringResource(R.string.plan_form_travelers_unit),
-                min = 1,
-                max = 20,
-                onChange = onTravelersChange,
-            )
+            val dayTitle = stringResource(R.string.plan_form_days_title)
+            val dayUnit = stringResource(R.string.plan_form_days_unit)
+            val travelerTitle = stringResource(R.string.plan_form_travelers_title)
+            val travelerUnit = stringResource(R.string.plan_form_travelers_unit)
+            BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+                val compact = maxWidth < 294.dp || LocalDensity.current.fontScale > 1.2f
+                if (compact) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TripStepper(dayTitle, days, dayUnit, 30, onDaysChange, Modifier.fillMaxWidth())
+                        TripStepper(travelerTitle, travelers, travelerUnit, 20, onTravelersChange, Modifier.fillMaxWidth())
+                    }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TripStepper(dayTitle, days, dayUnit, 30, onDaysChange, Modifier.weight(1f))
+                        TripStepper(travelerTitle, travelers, travelerUnit, 20, onTravelersChange, Modifier.weight(1f))
+                    }
+                }
+            }
         }
     }
 
@@ -353,8 +385,7 @@ internal fun FormContent(
 
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = PlanCardBg,
-        border = BorderStroke(1.dp, PlanSubtleBorder),
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
@@ -681,75 +712,54 @@ private fun BudgetInputRow(value: String, onValueChange: (String) -> Unit) {
 
 @Composable
 private fun PreferenceChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = if (selected) PlanOrangeLightBg else PlanTagBg,
-        border = BorderStroke(1.dp, if (selected) BrandOrange.copy(alpha = 0.4f) else Color.Transparent),
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .minimumInteractiveComponentSize().clickable(role = Role.Checkbox, onClick = onClick),
+    val style = LocalJourneySeason.current.edition
+    val icon = when (label) {
+        "美食" -> Icons.Filled.Favorite
+        "自然风光" -> Icons.Filled.Place
+        "人文历史" -> Icons.Filled.List
+        "亲子" -> Icons.Filled.Face
+        "摄影" -> Icons.Filled.Search
+        "购物" -> Icons.Filled.ShoppingCart
+        "夜生活" -> Icons.Filled.Star
+        else -> Icons.Filled.Info
+    }
+    val backdrop = if (selected) style.actionGradient else Brush.linearGradient(listOf(PlanTagBg, PlanTagBg))
+    val ink = if (selected) Color.White else Ink
+    Row(
+        modifier = Modifier.clip(CircleShape).background(backdrop)
+            .minimumInteractiveComponentSize().toggleable(selected, role = Role.Checkbox) { onClick() }
+            .padding(horizontal = 9.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-            color = if (selected) BrandOrange else Muted,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-        )
+        Icon(icon, null, tint = if (selected) Color.White else BrandOrange, modifier = Modifier.size(13.dp))
+        Text(label, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = ink)
     }
 }
 
-/** 步进器行控件 */
 @Composable
-private fun ModernStepperRow(
+private fun TripStepper(
     title: String,
-    subHint: String,
     value: Int,
     unit: String,
-    min: Int,
     max: Int,
     onChange: (Int) -> Unit,
+    modifier: Modifier,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = subHint, fontSize = 12.sp, color = Muted)
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+    Surface(modifier = modifier, shape = RoundedCornerShape(12.dp), color = PlanTagBg) {
+        Column(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            TactileStepperButton(
-                symbol = "−",
-                enabled = value > min,
-                onClick = { onChange(value - 1) },
-            )
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = PlanTagBg,
-                modifier = Modifier.width(54.dp),
+            Text(title, fontSize = 12.sp, color = Ink, fontWeight = FontWeight.SemiBold)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
             ) {
-                Text(
-                    text = "$value $unit",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 5.dp),
-                )
+                TactileStepperButton("−", value > 1) { onChange(value - 1) }
+                Text("$value $unit", fontSize = 14.sp, color = Ink, fontFamily = FontFamily.Monospace)
+                TactileStepperButton("+", value < max) { onChange(value + 1) }
             }
-            TactileStepperButton(
-                symbol = "+",
-                enabled = value < max,
-                onClick = { onChange(value + 1) },
-            )
         }
     }
 }
@@ -758,8 +768,8 @@ private fun ModernStepperRow(
 private fun TactileStepperButton(symbol: String, enabled: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(32.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .size(36.dp)
+            .clip(CircleShape)
             .background(if (enabled) PlanOrangeLightBg else PlanTagBg)
             .minimumInteractiveComponentSize().clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,

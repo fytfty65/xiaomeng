@@ -77,6 +77,7 @@ class BudgetViewModel(
 
     init {
         refresh()
+        loadEstimate()
     }
 
     fun refresh() = load(silent = false)

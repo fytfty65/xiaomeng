@@ -91,3 +91,11 @@ internal fun addToCalendar(context: Context, item: TripItinerary.Item): Boolean 
         )
     }.isSuccess
 }
+
+internal fun searchMap(context: Context, query: String): Boolean = runCatching {
+    context.startActivity(
+        Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(query)}")).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        },
+    )
+}.isSuccess

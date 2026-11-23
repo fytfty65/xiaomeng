@@ -1,5 +1,17 @@
 package com.omniroute.app.feature.trip
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.compose.material3.Text
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.padding
+import com.omniroute.app.core.ui.components.ItineraryDayPicker
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.omniroute.app.core.ui.theme.LocalAppPalette
+import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
@@ -49,6 +61,7 @@ import com.omniroute.app.feature.plan.RouteEditorScreen
 /**
  * 行程详情页：多端同步数据展示与按天动线预览
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TripDetailScreen(
     container: AppContainer,
@@ -74,6 +87,7 @@ fun TripDetailScreen(
         },
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshTools() }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -90,7 +104,7 @@ fun TripDetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PageBg),
+            .seasonBackdrop(),
         contentAlignment = Alignment.TopCenter,
     ) {
         // 平板/扩展屏上限制正文宽度，行程卡片不再被拉成长条。
@@ -135,6 +149,7 @@ fun TripDetailScreen(
                 trip?.let { TripItinerary.parse(it.content) }
             }
             val listState = rememberLazyListState()
+            var selectedDay by rememberSaveable(tripId) { mutableStateOf<Int?>(null) }
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -173,6 +188,8 @@ fun TripDetailScreen(
                                 summary = itinerary?.summary,
                                 hasContent = itinerary?.hasContent() == true,
                                 daysCount = itinerary?.days?.size ?: 0,
+                                journeyProgress = state.journeyProgress,
+                                budgetProgress = state.budgetProgress,
                                 onEditRoute = { viewModel.openEditor() },
                                 onOpenJourney = onOpenJourney,
                                 onOpenBudget = onOpenBudget,
@@ -181,13 +198,25 @@ fun TripDetailScreen(
                     }
                     // 最多 30 天也只在可视范围内组合卡片；dayNumber 作为稳定 key 避免滚动时重建。
                     if (itinerary != null && itinerary.hasContent()) {
+                        stickyHeader(key = "day_picker") {
+                            Box(Modifier.fillMaxWidth().background(LocalAppPalette.current.background)) {
+                                Column {
+                                    ItineraryDayPicker(itinerary.days.map { it.dayNumber }, selectedDay, { selectedDay = it }, overview = true)
+                                    if (itinerary.days.any { day -> day.items.any { it.isEstimated && it.priceLabel != null } }) {
+                                        Text("费用含估算，以实际价格为准", color = LocalAppPalette.current.muted,
+                                            fontSize = 11.sp, modifier = Modifier.padding(bottom = 7.dp))
+                                    }
+                                }
+                            }
+                        }
                         items(
-                            items = itinerary.days,
+                            items = itinerary.days.filter { selectedDay == null || it.dayNumber == selectedDay },
                             key = { day -> "detail_day_${day.dayNumber}" },
                         ) { day ->
                             Column {
                                 ItineraryDayCard(
                                     day = day,
+                                    showEstimatedNote = false,
                                     isBooked = { item ->
                                         state.bookingMarks.isBooked(day.dayNumber, item.name.orEmpty())
                                     },

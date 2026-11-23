@@ -1,5 +1,7 @@
 package com.omniroute.app.ui
 
+import androidx.navigation.NavBackStackEntry
+import com.omniroute.app.core.ui.theme.SeasonEditionTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +32,8 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -39,13 +43,14 @@ import com.omniroute.app.core.ui.components.LoadingScreen
 import com.omniroute.app.core.ui.theme.JourneySeason
 import com.omniroute.app.feature.auth.ForgotPasswordScreen
 import com.omniroute.app.feature.auth.LoginScreen
-import com.omniroute.app.feature.auth.RegisterScreen
 import com.omniroute.app.feature.home.HomeScreen
 import com.omniroute.app.feature.notify.NotificationsScreen
 import com.omniroute.app.feature.plan.CandidateDetailScreen
 import com.omniroute.app.feature.plan.CandidateDetailViewModel
 import com.omniroute.app.feature.plan.PlanningPrefill
 import com.omniroute.app.feature.plan.PlanningScreen
+import com.omniroute.app.feature.plan.QUICK_PLAN_CITY
+import com.omniroute.app.feature.plan.QUICK_PLAN_DAYS
 import com.omniroute.app.feature.profile.ProfileScreen
 import com.omniroute.app.feature.room.RoomScreen
 import com.omniroute.app.feature.season.SeasonDetailScreen
@@ -59,7 +64,6 @@ import kotlinx.coroutines.withContext
 
 private object Routes {
     const val LOGIN = "login"
-    const val REGISTER = "register"
     const val FORGOT_PASSWORD = "forgot_password"
     const val HOME = "home"
     const val PROFILE = "profile"
@@ -69,26 +73,44 @@ private object Routes {
     const val NOTIFICATIONS = "notifications"
     const val SEASON = "season"
     const val PLANNING = "planning"
-    const val TRIP_DETAIL = "trip_detail/{tripId}"
-    const val JOURNEY = "journey/{tripId}"
-    const val BUDGET = "budget/{tripId}"
-    const val CANDIDATE_DETAIL = "candidate_detail/{group}/{candidateId}"
+    const val PLANNING_ROUTE = "planning?$QUICK_PLAN_CITY={$QUICK_PLAN_CITY}&$QUICK_PLAN_DAYS={$QUICK_PLAN_DAYS}&edition={edition}&autostart={autostart}"
+    private const val EDITION_PATTERN = "?edition={edition}"
+    const val TRIP_DETAIL = "trip_detail/{tripId}$EDITION_PATTERN"
+    const val JOURNEY = "journey/{tripId}$EDITION_PATTERN"
+    const val BUDGET = "budget/{tripId}$EDITION_PATTERN"
+    const val CANDIDATE_DETAIL = "candidate_detail/{group}/{candidateId}$EDITION_PATTERN"
 
-    fun tripDetail(tripId: String): String {
-        return "trip_detail/" + android.net.Uri.encode(tripId)
-    }
+    fun planningFromPost(city: String, days: Int): String = quickPlanning(city, days) + "&autostart=false"
 
-    fun journey(tripId: String): String {
-        return "journey/" + android.net.Uri.encode(tripId)
-    }
+    fun seasonalPlanning(season: JourneySeason?): String = PLANNING + query(season)
 
-    fun budget(tripId: String): String {
-        return "budget/" + android.net.Uri.encode(tripId)
-    }
+    fun tripDetail(tripId: String, season: JourneySeason? = null): String =
+        "trip_detail/" + android.net.Uri.encode(tripId) + query(season)
 
-    fun candidateDetail(group: String, candidateId: String): String {
-        return "candidate_detail/" + android.net.Uri.encode(group) + "/" + android.net.Uri.encode(candidateId)
-    }
+    fun quickPlanning(city: String, days: Int): String =
+        "$PLANNING?$QUICK_PLAN_CITY=${android.net.Uri.encode(city)}&$QUICK_PLAN_DAYS=$days"
+
+    fun journey(tripId: String, season: JourneySeason?): String =
+        "journey/" + android.net.Uri.encode(tripId) + query(season)
+
+    fun budget(tripId: String, season: JourneySeason?): String =
+        "budget/" + android.net.Uri.encode(tripId) + query(season)
+
+    fun candidateDetail(group: String, candidateId: String, season: JourneySeason?): String =
+        "candidate_detail/" + android.net.Uri.encode(group) + "/" + android.net.Uri.encode(candidateId) + query(season)
+
+    private fun query(season: JourneySeason?) = season?.let { "?edition=${it.key}" }.orEmpty()
+}
+
+private fun editionArgument() = navArgument("edition") {
+    type = NavType.StringType
+    nullable = true
+    defaultValue = null
+}
+
+private fun NavBackStackEntry.lockedSeason(): JourneySeason? {
+    val key = arguments?.getString("edition") ?: return null
+    return JourneySeason.entries.firstOrNull { it.key == key }
 }
 
 @Composable
@@ -146,6 +168,11 @@ fun AppNavHost(
                         runCatching { container.authRepository.login(username, password) }
                     }
                 },
+                onRegister = { username, password, nickname ->
+                    withContext(Dispatchers.IO) {
+                        runCatching { container.authRepository.register(username, password, nickname) }
+                    }
+                },
                 onLoggedIn = { user ->
                     notice = null
                     container.settingsStore.setLastUsername(user.username)
@@ -153,10 +180,6 @@ fun AppNavHost(
                         popUpTo(navController.graph.startDestinationId) { inclusive = true }
                         launchSingleTop = true
                     }
-                },
-                onGoRegister = {
-                    notice = null
-                    navController.navigate(Routes.REGISTER)
                 },
                 onForgotPassword = {
                     notice = null
@@ -181,29 +204,16 @@ fun AppNavHost(
             )
         }
 
-        composable(Routes.REGISTER) {
-            RegisterScreen(
-                season = season,
-                onSeasonChange = onSeasonChange,
-                onRegister = { username, password, nickname ->
-                    withContext(Dispatchers.IO) {
-                        runCatching { container.authRepository.register(username, password, nickname) }
-                    }
-                },
-                onBackToLogin = { navController.popBackStack() },
-                onRegistered = { message ->
-                    notice = context.getString(R.string.auth_logout_notice, message)
-                    navController.popBackStack()
-                },
-            )
-        }
-
         composable(Routes.HOME) {
             HomeScreen(
                 container = container,
                 initialUser = currentUser,
                 refreshTick = homeRefreshTick,
                 onStartPlanning = { navController.navigate(Routes.PLANNING) },
+                onQuickPlan = { city, days ->
+                    navController.navigate(Routes.quickPlanning(city, days)) { launchSingleTop = true }
+                },
+                onSeasonChange = onSeasonChange,
                 onOpenSeason = { navController.navigate(Routes.SEASON) },
                 onOpenTrip = { tripId ->
                     if (tripId.isNotBlank()) {
@@ -225,75 +235,102 @@ fun AppNavHost(
         composable(Routes.SEASON) {
             SeasonDetailScreen(
                 season = season,
-                onSeasonChange = onSeasonChange,
-                onStartPlanning = { navController.navigate(Routes.PLANNING) },
+                onStartPlanning = { preview -> navController.navigate(Routes.seasonalPlanning(preview)) },
                 onBack = { navController.popBackStack() },
             )
         }
 
         composable(Routes.PROFILE) {
-            ProfileScreen(
-                container = container,
-                initialUser = currentUser,
-                season = season,
-                onSeasonChange = onSeasonChange,
-                onOpenTrips = {
-                    homeRefreshTick++
-                    navController.popBackStack()
-                },
-                onOpenNotifications = { navController.navigate(Routes.NOTIFICATIONS) },
-                onOpenRoom = { navController.navigate(Routes.ROOM) },
-                onOpenCommunity = { navController.navigate(Routes.COMMUNITY) },
-                onOpenGallery = { navController.navigate(Routes.GALLERY) },
-                onLoggedOut = {
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
-                onBack = {
-                    homeRefreshTick++
-                    navController.popBackStack()
-                },
-            )
+            SeasonEditionTheme(season) {
+                ProfileScreen(
+                    container = container,
+                    initialUser = currentUser,
+                    season = season,
+                    onSeasonChange = onSeasonChange,
+                    onOpenTrips = {
+                        homeRefreshTick++
+                        navController.popBackStack()
+                    },
+                    onOpenNotifications = { navController.navigate(Routes.NOTIFICATIONS) },
+                    onOpenRoom = { navController.navigate(Routes.ROOM) },
+                    onOpenCommunity = { navController.navigate(Routes.COMMUNITY) },
+                    onOpenGallery = { navController.navigate(Routes.GALLERY) },
+                    onLoggedOut = {
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onBack = {
+                        homeRefreshTick++
+                        navController.popBackStack()
+                    },
+                )
+            }
         }
 
         composable(Routes.ROOM) {
-            RoomScreen(
-                container = container,
-                onBack = { navController.popBackStack() },
-                onStartPlanning = { navController.navigate(Routes.PLANNING) },
-            )
+            SeasonEditionTheme(season) {
+                RoomScreen(
+                    container = container,
+                    onBack = { navController.popBackStack() },
+                    onStartPlanning = { navController.navigate(Routes.PLANNING) },
+                )
+            }
         }
 
         composable(Routes.NOTIFICATIONS) {
-            NotificationsScreen(
-                container = container,
-                onBack = {
-                    homeRefreshTick++
-                    navController.popBackStack()
-                },
-            )
+            SeasonEditionTheme(season) {
+                NotificationsScreen(
+                    container = container,
+                    onStartPlanning = { navController.navigate(Routes.PLANNING) },
+                    onBack = {
+                        homeRefreshTick++
+                        navController.popBackStack()
+                    },
+                )
+            }
         }
 
-        composable(Routes.PLANNING) {
-            PlanningScreen(
-                container = container,
-                onBack = { navController.popBackStack() },
-                onOpenCandidate = { group, candidateId ->
-                    navController.navigate(Routes.candidateDetail(group, candidateId))
+        composable(
+            route = Routes.PLANNING_ROUTE,
+            arguments = listOf(
+                navArgument("autostart") {
+                    type = NavType.BoolType
+                    defaultValue = true
                 },
-                onSaved = { tripId ->
-                    homeRefreshTick++
-                    navController.navigate(Routes.tripDetail(tripId)) {
-                        popUpTo(Routes.PLANNING) { inclusive = true }
-                        launchSingleTop = true
-                    }
+                editionArgument(),
+                navArgument(QUICK_PLAN_CITY) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 },
-            )
+                navArgument(QUICK_PLAN_DAYS) {
+                    type = NavType.IntType
+                    defaultValue = 3
+                },
+            ),
+        ) { entry ->
+            val lockedSeason = entry.lockedSeason()
+            SeasonEditionTheme(lockedSeason ?: season) {
+                PlanningScreen(
+                    container = container,
+                    onBack = { navController.popBackStack() },
+                    onOpenCandidate = { group, candidateId ->
+                        navController.navigate(Routes.candidateDetail(group, candidateId, lockedSeason))
+                    },
+                    onSaved = { tripId ->
+                        homeRefreshTick++
+                        navController.navigate(Routes.tripDetail(tripId, lockedSeason)) {
+                            popUpTo(Routes.PLANNING_ROUTE) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
         }
 
-        composable(Routes.CANDIDATE_DETAIL) { entry ->
+        composable(Routes.CANDIDATE_DETAIL, arguments = listOf(editionArgument())) { entry ->
             val group = entry.arguments?.getString("group").orEmpty()
             val candidateId = entry.arguments?.getString("candidateId").orEmpty()
             val viewModel: CandidateDetailViewModel = viewModel(
@@ -311,65 +348,81 @@ fun AppNavHost(
             )
             val state by viewModel.state.collectAsStateWithLifecycle()
             val detail = state.detail
-            when {
-                detail != null ->
-                    CandidateDetailScreen(detail = detail, onBack = { navController.popBackStack() })
-                state.loading ->
-                    LoadingScreen(text = stringResource(R.string.home_loading))
-                else ->
-                    MissingDetailScreen(onBack = { navController.popBackStack() })
+            SeasonEditionTheme(entry.lockedSeason() ?: season) {
+                when {
+                    detail != null ->
+                        CandidateDetailScreen(detail = detail, onBack = { navController.popBackStack() })
+                    state.loading ->
+                        LoadingScreen(text = stringResource(R.string.home_loading))
+                    else ->
+                        MissingDetailScreen(onBack = { navController.popBackStack() })
+                }
             }
         }
 
-        composable(Routes.TRIP_DETAIL) { entry ->
+        composable(Routes.TRIP_DETAIL, arguments = listOf(editionArgument())) { entry ->
             val tripId = entry.arguments?.getString("tripId").orEmpty()
-            TripDetailScreen(
-                container = container,
-                tripId = tripId,
-                onReplanNode = { city, nodeName ->
-                    PlanningPrefill.set(city, nodeName)
-                    navController.navigate(Routes.PLANNING)
-                },
-                onOpenJourney = { navController.navigate(Routes.journey(tripId)) },
-                onOpenBudget = { navController.navigate(Routes.budget(tripId)) },
-                onDeleted = {
-                    homeRefreshTick++
-                    navController.popBackStack()
-                },
-                onBack = { navController.popBackStack() },
-            )
+            val lockedSeason = entry.lockedSeason()
+            SeasonEditionTheme(lockedSeason ?: season) {
+                TripDetailScreen(
+                    container = container,
+                    tripId = tripId,
+                    onReplanNode = { city, nodeName ->
+                        PlanningPrefill.set(city, nodeName)
+                        navController.navigate(Routes.seasonalPlanning(lockedSeason))
+                    },
+                    onOpenJourney = { navController.navigate(Routes.journey(tripId, lockedSeason)) },
+                    onOpenBudget = { navController.navigate(Routes.budget(tripId, lockedSeason)) },
+                    onDeleted = {
+                        homeRefreshTick++
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Routes.COMMUNITY) {
-            CommunityScreen(
-                container = container,
-                onBack = { navController.popBackStack() },
-            )
+            SeasonEditionTheme(season) {
+                CommunityScreen(
+                    container = container,
+                    onUsePlan = { city, days -> navController.navigate(Routes.planningFromPost(city, days)) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Routes.GALLERY) {
-            GalleryScreen(
-                container = container,
-                onBack = { navController.popBackStack() },
-            )
+            SeasonEditionTheme(season) {
+                GalleryScreen(
+                    container = container,
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
-        composable(Routes.JOURNEY) { entry ->
+        composable(Routes.JOURNEY, arguments = listOf(editionArgument())) { entry ->
             val tripId = entry.arguments?.getString("tripId").orEmpty()
-            JourneyScreen(
-                container = container,
-                tripId = tripId,
-                onBack = { navController.popBackStack() },
-            )
+            val lockedSeason = entry.lockedSeason()
+            SeasonEditionTheme(lockedSeason ?: season) {
+                JourneyScreen(
+                    container = container,
+                    tripId = tripId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
-        composable(Routes.BUDGET) { entry ->
+        composable(Routes.BUDGET, arguments = listOf(editionArgument())) { entry ->
             val tripId = entry.arguments?.getString("tripId").orEmpty()
-            BudgetScreen(
-                container = container,
-                tripId = tripId,
-                onBack = { navController.popBackStack() },
-            )
+            val lockedSeason = entry.lockedSeason()
+            SeasonEditionTheme(lockedSeason ?: season) {
+                BudgetScreen(
+                    container = container,
+                    tripId = tripId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
     }
 

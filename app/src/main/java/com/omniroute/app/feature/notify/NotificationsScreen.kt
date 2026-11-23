@@ -1,5 +1,9 @@
 package com.omniroute.app.feature.notify
 
+import com.omniroute.app.core.ui.theme.EditionSurface
+import com.omniroute.app.core.ui.theme.OmniSeasonLogo
+import androidx.compose.material3.TextButton
+import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -94,17 +98,22 @@ private fun RiskPushCard(
     busy: Boolean,
     cities: List<String>,
     notice: String?,
+    lastCheckedAt: Long?,
     onToggle: (Boolean) -> Unit,
     onCheck: () -> Unit,
+    onStartPlanning: () -> Unit,
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = CircleShape, color = InfoBg) {
+                    OmniSeasonLogo(modifier = Modifier.padding(8.dp), diameter = 30.dp, tint = InfoFg)
+                }
+                Spacer(Modifier.width(9.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.notify_push_title),
@@ -136,6 +145,11 @@ private fun RiskPushCard(
                 fontSize = 11.5.sp,
                 color = Muted,
             )
+            if (cities.isEmpty()) {
+                TextButton(onClick = onStartPlanning) {
+                    Text("规划一份行程，开启守护", fontSize = 12.sp)
+                }
+            }
             if (busy) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -144,32 +158,20 @@ private fun RiskPushCard(
                     color = Muted,
                 )
             }
+            lastCheckedAt?.let { time ->
+                val formatted = android.text.format.DateFormat.getTimeFormat(LocalContext.current)
+                    .format(java.util.Date(time))
+                Text("上次巡检 · $formatted", fontSize = 11.sp, color = Muted, modifier = Modifier.padding(top = 6.dp))
+            }
             notice?.let { message ->
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = message, fontSize = 11.5.sp, color = BrandOrange)
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.notify_firebase_hint),
-                    fontSize = 10.5.sp,
-                    color = Muted,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = stringResource(R.string.notify_push_check),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (busy) Muted else BrandOrange,
-                    modifier = Modifier
-                        .minimumInteractiveComponentSize()
-                        .clickable(enabled = !busy, role = Role.Button, onClick = onCheck),
-                )
+            Surface(shape = RoundedCornerShape(11.dp), color = LocalAppPalette.current.brandTint) {
+                TextButton(onClick = onCheck, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.notify_push_check), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }
@@ -182,7 +184,7 @@ private fun RiskPushCard(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationsScreen(container: AppContainer, onBack: () -> Unit) {
+fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlanning: () -> Unit) {
     val context = LocalContext.current
     // 列表、过滤与已读状态由 ViewModel 持有，旋转或重进页面不会丢失。
     val viewModel: NotificationsViewModel = viewModel(
@@ -219,7 +221,7 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CreamBg),
+            .seasonBackdrop(),
     ) {
         Column(
             modifier = Modifier
@@ -285,8 +287,10 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit) {
                                 busy = state.pushBusy,
                                 cities = state.pushCities,
                                 notice = state.pushNotice,
+                                lastCheckedAt = state.lastCheckedAt,
                                 onToggle = onTogglePush,
                                 onCheck = { viewModel.checkNow() },
+                                onStartPlanning = onStartPlanning,
                             )
 
                             Spacer(modifier = Modifier.height(14.dp))

@@ -1,5 +1,16 @@
 package com.omniroute.app.feature.profile
 
+import androidx.compose.material.icons.filled.Info
+import com.omniroute.app.core.ui.components.SeasonGallery
+import com.omniroute.app.core.ui.theme.EditionSurface
+import com.omniroute.app.core.ui.theme.OmniSeasonLogo
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.edition
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.text.font.FontFamily
+import com.omniroute.app.core.ui.theme.seasonBackdrop
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -163,7 +174,7 @@ fun ProfileScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CreamBg),
+            .seasonBackdrop(),
     ) {
         val scrollState = rememberScrollState()
         Column(
@@ -179,6 +190,8 @@ fun ProfileScreen(
 
             ProfileHero(
                 user = user,
+                tripCount = state.tripCount.takeIf { state.cityCount != null && !state.tripCountError },
+                cityCount = state.cityCount,
                 loading = state.loadingProfile,
                 uploading = state.avatarUploading,
                 onEdit = { viewModel.startEdit() },
@@ -205,48 +218,55 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            SectionTitle(text = stringResource(R.string.profile_section_content))
-            Spacer(modifier = Modifier.height(10.dp))
-
-            EntryGroup {
-                ProfileEntryRow(
-                    icon = Icons.Filled.List,
-                    title = stringResource(R.string.profile_my_trips),
-                    subtitle = when {
-                        state.tripCount > 0 -> stringResource(R.string.profile_trips_count, state.tripCount)
-                        state.tripCountError -> stringResource(R.string.profile_trips_count_error)
-                        else -> stringResource(R.string.profile_trips_sub)
-                    },
-                    onClick = onOpenTrips,
-                )
-                EntryDivider()
-                ProfileEntryRow(
-                    icon = Icons.Filled.Warning,
-                    title = stringResource(R.string.profile_risk_title),
-                    subtitle = stringResource(R.string.profile_risk_sub),
-                    onClick = onOpenNotifications,
-                )
-                EntryDivider()
-                ProfileEntryRow(
-                    icon = Icons.Filled.Person,
-                    title = stringResource(R.string.profile_room_title),
-                    subtitle = stringResource(R.string.profile_room_sub),
-                    onClick = onOpenRoom,
-                )
-                EntryDivider()
-                ProfileEntryRow(
-                    icon = Icons.Filled.Add,
-                    title = stringResource(R.string.profile_gallery),
-                    subtitle = stringResource(R.string.profile_gallery_sub),
-                    onClick = onOpenGallery,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
             SectionTitle(text = stringResource(R.string.profile_section_season))
             Spacer(modifier = Modifier.height(10.dp))
 
-            SeasonPreferenceCard(season = season, onSeasonChange = onSeasonChange)
+            SeasonGallery(season, onSeasonChange)
+
+
+            Spacer(modifier = Modifier.height(24.dp))
+            SectionTitle(text = stringResource(R.string.profile_section_content))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    ProfileTile(
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        icon = Icons.Filled.List,
+                        title = stringResource(R.string.profile_my_trips),
+                        subtitle = when {
+                            state.tripCount > 0 -> stringResource(R.string.profile_trips_count, state.tripCount)
+                            state.tripCountError -> stringResource(R.string.profile_trips_count_error)
+                            else -> stringResource(R.string.profile_trips_sub)
+                        },
+                        onClick = onOpenTrips,
+                    )
+                    ProfileTile(
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        icon = Icons.Filled.Info,
+                        title = stringResource(R.string.profile_risk_title),
+                        subtitle = stringResource(R.string.profile_risk_sub),
+                        onClick = onOpenNotifications,
+                    )
+                }
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    ProfileTile(
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        icon = Icons.Filled.Person,
+                        title = stringResource(R.string.profile_room_title),
+                        subtitle = stringResource(R.string.profile_room_sub),
+                        onClick = onOpenRoom,
+                    )
+                    ProfileTile(
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        icon = Icons.Filled.Add,
+                        title = stringResource(R.string.profile_gallery),
+                        subtitle = stringResource(R.string.profile_gallery_sub),
+                        onClick = onOpenGallery,
+                    )
+                }
+            }
+
 
             Spacer(modifier = Modifier.height(24.dp))
             SectionTitle(text = stringResource(R.string.profile_section_account))
@@ -377,18 +397,28 @@ private fun ProfileTopBar(onBack: () -> Unit) {
 @Composable
 private fun ProfileHero(
     user: UserDto?,
+    tripCount: Int?,
+    cityCount: Int?,
     loading: Boolean,
     uploading: Boolean,
     onEdit: () -> Unit,
     onPickAvatar: () -> Unit,
 ) {
+    val style = LocalJourneySeason.current.edition
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
+        color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.padding(17.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("旅行护照", fontFamily = style.titleFont, fontWeight = style.titleWeight, fontSize = 22.sp, color = Ink)
+                    Text("OMNIROUTE PASSPORT", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = BrandOrange, letterSpacing = 1.sp)
+                }
+                OmniSeasonLogo(diameter = 38.dp)
+            }
+            Spacer(Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val initial = user?.displayName?.trim()?.firstOrNull()?.uppercase() ?: "U"
                 Box {
@@ -482,7 +512,14 @@ private fun ProfileHero(
             HorizontalDivider(color = SubtleLine, thickness = 1.dp)
             Spacer(modifier = Modifier.height(12.dp))
 
+            tripCount?.let {
+                val trips = stringResource(R.string.profile_trips_count, it)
+                val cities = cityCount?.let { count -> "探索 $count 座城市" }
+                Text(listOfNotNull(trips, cities).joinToString("  ·  "), color = BrandOrange, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(5.dp))
+            }
             Text(
+                fontFamily = style.titleFont,
                 text = user?.signature?.trim()?.takeIf { it.isNotEmpty() }
                     ?: stringResource(R.string.profile_no_signature),
                 fontSize = 12.5.sp,
@@ -536,54 +573,21 @@ private fun EntryDivider() {
 }
 
 @Composable
-private fun SeasonPreferenceCard(
-    season: JourneySeason,
-    onSeasonChange: (JourneySeason) -> Unit,
+private fun ProfileTile(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val palette = LocalAppPalette.current
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, CardBorder),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.profile_season_hint),
-                fontSize = 12.sp,
-                color = Muted,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                JourneySeason.values().forEach { item ->
-                    val selected = item == season
-                    val shape = RoundedCornerShape(50)
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(shape)
-                            .background(if (selected) palette.brand else SoftTagBg)
-                            .border(
-                                width = 1.dp,
-                                color = if (selected) Color.Transparent else CardBorder,
-                                shape = shape,
-                            )
-                            .clickable(role = Role.RadioButton) { onSeasonChange(item) }
-                            .padding(vertical = 9.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(item.labelRes),
-                            fontSize = 13.sp,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (selected) palette.onBrand else Ink,
-                        )
-                    }
-                }
+    Surface(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(17.dp), color = EditionSurface) {
+        Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Surface(shape = CircleShape, color = palette.brandTint) {
+                Icon(icon, null, tint = palette.brand, modifier = Modifier.padding(6.dp).size(17.dp))
             }
+            Text(title, color = Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = Muted, fontSize = 11.sp, lineHeight = 15.sp)
         }
     }
 }
