@@ -1,14 +1,14 @@
 package com.omniroute.app.feature.notify
 
+import com.omniroute.app.core.ui.theme.inkFoil
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.geometry.Offset
+import com.omniroute.app.core.ui.theme.FolioSerif
+import com.omniroute.app.core.ui.theme.FolioDigits
 import androidx.compose.foundation.Canvas
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.foundation.layout.heightIn
 import com.omniroute.app.core.ui.theme.editionRim
 import com.omniroute.app.core.ui.theme.EditionSurface
-import com.omniroute.app.core.ui.theme.OmniSeasonLogo
-import androidx.compose.material3.TextButton
 import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.Manifest
 import android.content.pm.PackageManager
@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -58,11 +57,8 @@ import com.omniroute.app.R
 import com.omniroute.app.core.network.dto.RiskNotificationDto
 import com.omniroute.app.feature.auth.BrandOrange
 import com.omniroute.app.feature.auth.CardBorder
-import com.omniroute.app.feature.auth.CreamBg
 import com.omniroute.app.feature.auth.ErrorBg
 import com.omniroute.app.feature.auth.ErrorFg
-import com.omniroute.app.feature.auth.InfoBg
-import com.omniroute.app.feature.auth.InfoFg
 import com.omniroute.app.feature.auth.Ink
 import com.omniroute.app.feature.auth.InlineBanner
 import com.omniroute.app.feature.auth.Muted
@@ -109,73 +105,38 @@ private fun RiskPushCard(
     onCheck: () -> Unit,
     onStartPlanning: () -> Unit,
 ) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = EditionSurface,
-        modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                GuardBadge(Modifier.size(55.dp))
-                Spacer(Modifier.width(9.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.notify_push_title),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink,
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(R.string.notify_push_sub),
-                        fontSize = 11.5.sp,
-                        color = Muted,
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Switch(
-                    checked = enabled,
-                    enabled = !busy,
-                    onCheckedChange = onToggle,
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(if (cities.isEmpty()) stringResource(R.string.notify_push_no_city)
-                    else stringResource(R.string.notify_push_cities, cities.joinToString(" · ")),
-                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(InfoBg)
-                        .padding(horizontal = 9.dp, vertical = 6.dp), fontSize = 12.sp, color = InfoFg)
-                Surface(onClick = onCheck, enabled = !busy, shape = CircleShape, color = Color.Transparent,
-                    border = BorderStroke(1.dp, BrandOrange.copy(alpha = 0.46f))) {
-                    Text(stringResource(R.string.notify_push_check), color = BrandOrange,
-                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp), fontSize = 12.sp)
-                }
-            }
-            if (cities.isEmpty()) {
-                TextButton(onClick = onStartPlanning) {
-                    Text("规划一份行程，开启守护", fontSize = 12.sp)
-                }
-            }
-            if (busy) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.notify_push_busy),
-                    fontSize = 11.5.sp,
-                    color = Muted,
-                )
-            }
-            lastCheckedAt?.let { time ->
-                val formatted = android.text.format.DateFormat.getTimeFormat(LocalContext.current)
-                    .format(java.util.Date(time))
-                Text("上次巡检 · $formatted", fontSize = 11.sp, color = Muted, modifier = Modifier.padding(top = 6.dp))
-            }
-            notice?.let { message ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = message, fontSize = 11.5.sp, color = BrandOrange)
-            }
-
+    val ivory = Color(0xFFF2F2E9)
+    val signal = Color(0xFF98D6AE)
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).inkFoil().padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("目的地巡检", Modifier.weight(1f), color = ivory, fontFamily = FolioSerif, fontSize = 22.sp)
+            Text(stringResource(R.string.notify_push_check), color = ivory, fontSize = 12.sp,
+                modifier = Modifier.clickable(enabled = !busy, role = Role.Button, onClick = onCheck).padding(9.dp))
+            Switch(checked = enabled, enabled = !busy, onCheckedChange = onToggle)
         }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+            Canvas(Modifier.size(64.dp)) {
+                val u = size.minDimension / 2f
+                listOf(0.33f, 0.65f, 0.97f).forEach { scale ->
+                    drawCircle(signal.copy(alpha = 0.42f), u * scale, style = Stroke(0.8.dp.toPx()))
+                }
+                drawLine(signal.copy(alpha = 0.25f), Offset(0f,u), Offset(size.width,u), 1.dp.toPx())
+                drawLine(signal.copy(alpha = 0.25f), Offset(u,0f), Offset(u,size.height), 1.dp.toPx())
+                drawLine(signal, center, Offset(u*1.62f,u*0.31f), 1.6.dp.toPx(), StrokeCap.Round)
+                drawCircle(signal, 2.dp.toPx(), Offset(u*1.38f,u*0.58f))
+            }
+            Column {
+                Text(cities.joinToString(" · ").ifBlank { "尚未订阅城市" }, color = ivory, fontSize = 22.sp, fontFamily = FolioSerif)
+                val time = lastCheckedAt?.let { android.text.format.DateFormat.getTimeFormat(LocalContext.current).format(java.util.Date(it)) }
+                Text(if (busy) "正在巡检…" else time?.let { "上次巡检   $it" } ?: "等待本次巡检",
+                    color = ivory.copy(alpha = 0.76f), fontSize = 12.sp)
+            }
+        }
+        Text(if (enabled) "后台通知已开启" else "后台通知已关闭", color = ivory.copy(alpha = 0.76f), fontSize = 12.sp)
+        if (cities.isEmpty()) Text("规划一份行程，开启守护  →", color = ivory,
+            modifier = Modifier.clickable(role = Role.Button, onClick = onStartPlanning).padding(vertical = 4.dp))
+        notice?.let { Text(it, color = ivory, fontSize = 12.sp) }
     }
 }
 
@@ -249,7 +210,7 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = stringResource(R.string.notify_title),
-                        fontSize = 25.sp,
+                        fontFamily = FolioSerif, fontSize = 25.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink,
                     )
@@ -374,37 +335,32 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
                         }
 
                         visible.isEmpty() -> item(key = "notify_empty") {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = EditionSurface,
-                                modifier = Modifier.editionRim(RoundedCornerShape(16.dp)).fillMaxWidth(),
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 18.dp, vertical = 28.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    GuardBadge(Modifier.size(68.dp))
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text(
-                                        text = stringResource(
-                                            if (state.unreadOnly) {
-                                                R.string.notify_empty_unread
-                                            } else {
-                                                R.string.notify_empty_all
-                                            },
-                                        ),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Ink,
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.notify_empty_hint),
-                                        fontSize = 12.sp,
-                                        color = Muted,
-                                    )
+                            Column(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                                Text(if (state.errorText != null) "通知记录待同步" else stringResource(if (state.unreadOnly) R.string.notify_empty_unread else R.string.notify_empty_all),
+                                    fontSize = 23.sp, fontFamily = FolioSerif, color = Ink)
+                                Text("各类通知记录", fontSize = 12.sp, color = Muted)
+                                HorizontalDivider(color = CardBorder)
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    listOf("气象" to listOf("weather", "气象", "天气"), "交通" to listOf("traffic", "transport", "路况", "交通"),
+                                        "景区" to listOf("scenic", "attraction", "景区")).forEach { (label, keys) ->
+                                        val count = state.items.count { item -> keys.any { item.type.orEmpty().contains(it, ignoreCase = true) } }
+                                        Column(Modifier.weight(1f)) {
+                                            Text(label, fontFamily = FolioSerif, fontSize = 17.sp, color = Ink)
+                                            Text(if (state.errorText != null) "—" else "%02d".format(count),
+                                                fontFamily = FolioDigits, fontSize = 30.sp, color = Ink)
+                                            Text(if (state.errorText == null) "条通知" else "待同步", fontSize = 11.sp, color = Muted)
+                                        }
+                                    }
+                                }
+                                HorizontalDivider(color = CardBorder)
+                                if (state.pushCities.isNotEmpty()) {
+                                    Text("已订阅目的地", color = Ink, fontFamily = FolioSerif, fontSize = 18.sp)
+                                    state.pushCities.distinct().forEach { city ->
+                                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                            Text(city, modifier = Modifier.weight(1f), color = Ink, fontSize = 14.sp)
+                                            Text(if (state.pushEnabled) "后台提醒开启" else "手动巡检", color = Muted, fontSize = 12.sp)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -600,29 +556,5 @@ private fun RiskCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun GuardBadge(modifier: Modifier) {
-    val ink = InfoFg
-    Canvas(modifier) {
-        val u = size.minDimension / 56f
-        drawCircle(ink.copy(alpha = 0.07f))
-        drawCircle(Brush.linearGradient(listOf(ink.copy(alpha = 0.20f), ink.copy(alpha = 0.08f))), radius = 22*u)
-        val shield = Path().apply {
-            moveTo(28*u, 15*u)
-            quadraticTo(33*u, 19*u, 38*u, 19*u)
-            lineTo(38*u, 27*u)
-            quadraticTo(38*u, 34*u, 28*u, 40*u)
-            quadraticTo(18*u, 34*u, 18*u, 27*u)
-            lineTo(18*u, 19*u)
-            quadraticTo(23*u, 19*u, 28*u, 15*u)
-            close()
-        }
-        drawPath(shield, ink.copy(alpha = 0.13f))
-        drawPath(shield, ink, style = Stroke(1.7f*u))
-        val check = Path().apply { moveTo(23*u, 27*u); lineTo(27*u, 31*u); lineTo(33*u, 24*u) }
-        drawPath(check, ink, style = Stroke(2*u))
     }
 }

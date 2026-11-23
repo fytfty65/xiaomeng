@@ -1,9 +1,17 @@
 package com.omniroute.app.feature.profile
 
+import androidx.compose.ui.draw.clipToBounds
+import com.omniroute.app.core.ui.theme.FolioSerif
+import com.omniroute.app.core.ui.theme.FolioDigits
+import androidx.compose.foundation.layout.*
+import com.omniroute.app.core.ui.components.CoverBack
+import com.omniroute.app.core.ui.components.CoverStatusShade
+import com.omniroute.app.core.ui.components.DestinationCover
+import com.omniroute.app.core.ui.SystemBarIcons
+import com.omniroute.app.core.ui.theme.inkFoil
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.rotate
 import com.omniroute.app.core.ui.theme.editionRim
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.material.icons.filled.Info
 import com.omniroute.app.core.ui.components.SeasonGallery
 import com.omniroute.app.core.ui.theme.EditionSurface
@@ -13,12 +21,10 @@ import com.omniroute.app.core.ui.theme.edition
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.ui.text.font.FontFamily
 import com.omniroute.app.core.ui.theme.seasonBackdrop
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,7 +49,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
@@ -89,13 +94,11 @@ import com.omniroute.app.R
 import com.omniroute.app.core.network.dto.UserDto
 import com.omniroute.app.feature.auth.BrandOrange
 import com.omniroute.app.feature.auth.CardBorder
-import com.omniroute.app.feature.auth.CreamBg
 import com.omniroute.app.feature.auth.ErrorBg
 import com.omniroute.app.feature.auth.ErrorFg
 import com.omniroute.app.feature.auth.Ink
 import com.omniroute.app.feature.auth.InlineBanner
 import com.omniroute.app.feature.auth.Muted
-import com.omniroute.app.core.ui.components.CircleIconButton
 import com.omniroute.app.core.ui.components.RemoteAvatar
 import com.omniroute.app.core.ui.theme.JourneySeason
 import com.omniroute.app.core.ui.theme.LocalAppPalette
@@ -175,24 +178,20 @@ fun ProfileScreen(
         }
     }
 
+    SystemBarIcons(darkIcons = false, darkNavigationIcons = !androidx.compose.foundation.isSystemInDarkTheme())
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .seasonBackdrop(),
+        modifier = Modifier.fillMaxSize().seasonBackdrop(),
     ) {
         val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
                 .verticalScroll(scrollState)
-                .wheelScroll(scrollState)
-                .padding(horizontal = 20.dp),
+                .wheelScroll(scrollState),
         ) {
-            ProfileTopBar(onBack = onBack)
-            Spacer(modifier = Modifier.height(6.dp))
-
             ProfileHero(
+                onBack = onBack,
                 user = user,
                 tripCount = state.tripCount.takeIf { state.cityCount != null && !state.tripCountError },
                 cityCount = state.cityCount,
@@ -206,105 +205,95 @@ fun ProfileScreen(
                 },
             )
 
-            state.profileError?.let {
-                Spacer(modifier = Modifier.height(12.dp))
-                InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
-            }
+            Column(Modifier.padding(horizontal = 20.dp)) {
+                state.profileError?.let {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
+                }
 
-            state.avatarError?.let {
-                Spacer(modifier = Modifier.height(12.dp))
-                InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
-            }
+                state.avatarError?.let {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
+                }
 
-            state.notice?.let {
-                Spacer(modifier = Modifier.height(12.dp))
-                InlineBanner(text = it, bg = AccentOrangeBg, fg = BrandOrange, icon = Icons.Filled.Check)
-            }
+                state.notice?.let {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InlineBanner(text = it, bg = AccentOrangeBg, fg = BrandOrange, icon = Icons.Filled.Check)
+                }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            SectionTitle(text = stringResource(R.string.profile_section_season))
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionTitle(text = stringResource(R.string.profile_section_season))
+                Spacer(modifier = Modifier.height(10.dp))
 
-            SeasonGallery(season, onSeasonChange)
+                SeasonGallery(season, onSeasonChange)
 
 
-            Spacer(modifier = Modifier.height(24.dp))
-            SectionTitle(text = stringResource(R.string.profile_section_content))
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionTitle(text = stringResource(R.string.profile_section_content))
+                Spacer(modifier = Modifier.height(10.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ProfileTile(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                    val latest = state.latestTrip
+                    DestinationCover(latest?.destCity, latest?.content.orEmpty().contains("天池"),
+                        Modifier.weight(1.05f).fillMaxHeight().clip(RoundedCornerShape(7.dp))
+                            .clickable(role = Role.Button, onClick = onOpenTrips)) {
+                        Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCE15201C)))))
+                        Column(Modifier.align(Alignment.BottomStart).padding(13.dp)) {
+                            Text(stringResource(R.string.profile_my_trips), fontFamily = FolioSerif, fontSize = 22.sp, color = Color.White)
+                            latest?.let { Text(listOfNotNull(it.destCity, it.days.takeIf { d -> d > 0 }?.let { d -> "$d 天" })
+                                .joinToString("  ·  "), color = Color.White, fontSize = 12.sp) }
+                        }
+                    }
+                    Column(Modifier.weight(1f)) {
+                        listOf(Triple(R.string.profile_room_title, Icons.Filled.Person, onOpenRoom),
+                            Triple(R.string.profile_gallery, Icons.Filled.Add, onOpenGallery),
+                            Triple(R.string.profile_risk_title, Icons.Filled.Info, onOpenNotifications)).forEach { (label, icon, action) ->
+                            HorizontalDivider(color = SubtleLine)
+                            Row(Modifier.fillMaxWidth().heightIn(min = 53.dp).clickable(role = Role.Button, onClick = action),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Icon(icon, null, tint = Muted, modifier = Modifier.size(16.dp))
+                                Text(stringResource(label), Modifier.weight(1f).padding(start = 8.dp), color = Ink, fontSize = 14.sp)
+                                Text("›", color = Muted)
+                            }
+                        }
+                        HorizontalDivider(color = SubtleLine)
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionTitle(text = stringResource(R.string.profile_section_account))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                AccountInfoCard(user = user)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                EntryGroup {
+                    ProfileEntryRow(
+                        icon = Icons.Filled.Lock,
+                        title = stringResource(R.string.profile_change_password),
+                        subtitle = stringResource(R.string.profile_change_password_sub),
+                        onClick = { viewModel.openChangePassword() },
+                    )
+                    HorizontalDivider(color = CardBorder)
+                    ProfileEntryRow(
                         icon = Icons.Filled.List,
-                        title = stringResource(R.string.profile_my_trips),
-                        subtitle = when {
-                            state.tripCount > 0 -> stringResource(R.string.profile_trips_count, state.tripCount)
-                            state.tripCountError -> stringResource(R.string.profile_trips_count_error)
-                            else -> stringResource(R.string.profile_trips_sub)
-                        },
-                        onClick = onOpenTrips,
-                    )
-                    ProfileTile(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        icon = Icons.Filled.Info,
-                        title = stringResource(R.string.profile_risk_title),
-                        subtitle = stringResource(R.string.profile_risk_sub),
-                        onClick = onOpenNotifications,
+                        title = stringResource(R.string.profile_community),
+                        subtitle = stringResource(R.string.profile_community_sub),
+                        onClick = onOpenCommunity,
                     )
                 }
-                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ProfileTile(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        icon = Icons.Filled.Person,
-                        title = stringResource(R.string.profile_room_title),
-                        subtitle = stringResource(R.string.profile_room_sub),
-                        onClick = onOpenRoom,
-                    )
-                    ProfileTile(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        icon = Icons.Filled.Add,
-                        title = stringResource(R.string.profile_gallery),
-                        subtitle = stringResource(R.string.profile_gallery_sub),
-                        onClick = onOpenGallery,
-                    )
-                }
-            }
 
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
-            SectionTitle(text = stringResource(R.string.profile_section_account))
-            Spacer(modifier = Modifier.height(10.dp))
-
-            AccountInfoCard(user = user)
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            EntryGroup {
-                ProfileEntryRow(
-                    icon = Icons.Filled.Lock,
-                    title = stringResource(R.string.profile_change_password),
-                    subtitle = stringResource(R.string.profile_change_password_sub),
-                    onClick = { viewModel.openChangePassword() },
+                LogoutButton(
+                    loggingOut = state.loggingOut,
+                    onClick = { viewModel.requestLogout() },
                 )
-                HorizontalDivider(color = CardBorder)
-                ProfileEntryRow(
-                    icon = Icons.Filled.List,
-                    title = stringResource(R.string.profile_community),
-                    subtitle = stringResource(R.string.profile_community_sub),
-                    onClick = onOpenCommunity,
-                )
+
+                Spacer(modifier = Modifier.height(28.dp))
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            LogoutButton(
-                loggingOut = state.loggingOut,
-                onClick = { viewModel.requestLogout() },
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
         }
+        CoverStatusShade()
     }
 
     if (state.editing && user != null) {
@@ -363,43 +352,8 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileTopBar(onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            CircleIconButton(
-                icon = Icons.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.common_back),
-                onClick = onBack,
-                background = CardBg,
-                borderColor = CardBorder,
-                tint = Ink,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = stringResource(R.string.profile_title),
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink,
-                )
-                Text(
-                    text = stringResource(R.string.profile_subtitle),
-                    fontSize = 12.sp,
-                    color = Muted,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun ProfileHero(
+    onBack: () -> Unit,
     user: UserDto?,
     tripCount: Int?,
     cityCount: Int?,
@@ -409,29 +363,27 @@ private fun ProfileHero(
     onPickAvatar: () -> Unit,
 ) {
     val style = LocalJourneySeason.current.edition
-    val palette = LocalAppPalette.current
-    val shape = RoundedCornerShape(24.dp)
-    Box(Modifier.fillMaxWidth().editionRim(shape).clip(shape).background(Brush.linearGradient(
-        listOf(lerp(palette.surface, style.glow, 0.22f), lerp(palette.surface, style.secondary, 0.20f)),
-    ))) {
-        OmniSeasonLogo(Modifier.align(Alignment.TopEnd).padding(6.dp).rotate(-14f), diameter = 90.dp,
-            tint = palette.brand.copy(alpha = 0.13f))
-        Column(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
-            Text("OMNIROUTE   /   PASSPORT", fontSize = 10.sp, fontFamily = FontFamily.Monospace,
-                color = BrandOrange, letterSpacing = 1.6.sp)
-            Text("旅行护照", fontFamily = style.titleFont, fontWeight = FontWeight.SemiBold,
-                fontSize = 27.sp, lineHeight = 36.sp, color = Ink)
-            Spacer(Modifier.height(10.dp))
+    val foil = Color(0xFFE5DCBF)
+    Box(Modifier.fillMaxWidth().inkFoil().clipToBounds()) {
+        OmniSeasonLogo(Modifier.align(Alignment.CenterEnd).offset(x = 24.dp).rotate(-14f), diameter = 154.dp,
+            tint = foil.copy(alpha = 0.075f))
+        Column(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 22.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                CoverBack(onBack)
+                Text("OMNIROUTE   /   PASSPORT", fontSize = 12.sp, fontFamily = FolioDigits, color = foil, letterSpacing = 2.sp)
+            }
+            Text("旅行护照", fontFamily = FolioSerif, fontSize = 35.sp, lineHeight = 46.sp, color = Color.White)
+            Spacer(Modifier.height(9.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val initial = user?.displayName?.trim()?.firstOrNull()?.uppercase() ?: "U"
                 Box {
                     RemoteAvatar(
                         path = user?.avatarUrl,
                         fallback = initial,
-                        size = 56.dp,
+                        size = 44.dp,
                         background = AccentOrangeBg,
                         foreground = BrandOrange,
-                        fontSize = 24.sp,
+                        fontSize = 20.sp,
                         contentDescription = stringResource(R.string.profile_avatar_change),
                         modifier = Modifier.border(2.dp, Color.White, CircleShape).clickable(
                             enabled = !uploading,
@@ -465,7 +417,7 @@ private fun ProfileHero(
                                 ?: stringResource(R.string.profile_not_logged_in),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Ink,
+                            color = Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -483,7 +435,7 @@ private fun ProfileHero(
                         text = user?.username?.takeIf { it.isNotBlank() }?.let { "@$it" } ?: "—",
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                         fontSize = 12.5.sp,
-                        color = Muted,
+                        color = foil,
                     )
                 }
 
@@ -514,15 +466,18 @@ private fun ProfileHero(
 
             Spacer(modifier = Modifier.height(14.dp))
             tripCount?.let {
-                val trips = stringResource(R.string.profile_trips_count, it)
-                val cities = cityCount?.let { count -> "探索 $count 座城市" }
-                Text(listOfNotNull(trips, cities).joinToString("   ·   "), color = palette.ink,
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp))
-                        .background(palette.brand.copy(alpha = 0.075f)).padding(horizontal = 11.dp, vertical = 7.dp),
-                    fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                HorizontalDivider(color = foil.copy(alpha = 0.28f))
+                Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Text("%02d".format(it), color = foil, fontFamily = FolioDigits, fontSize = 32.sp)
+                    Text("份路书", color = foil, fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, end = 16.dp))
+                    cityCount?.let { cities ->
+                        Text("%02d".format(cities), color = foil, fontFamily = FolioDigits, fontSize = 32.sp)
+                        Text("座城", color = foil, fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp))
+                    }
+                }
             }
             user?.signature?.trim()?.takeIf { it.isNotEmpty() }?.let {
-                Text(it, fontSize = 12.sp, color = Muted, modifier = Modifier.padding(top = 6.dp))
+                Text(it, fontSize = 12.sp, color = foil, modifier = Modifier.padding(top = 6.dp))
             }
         }
     }
@@ -553,37 +508,6 @@ private fun EntryDivider() {
         thickness = 1.dp,
         modifier = Modifier.padding(start = 52.dp, end = 16.dp),
     )
-}
-
-@Composable
-private fun ProfileTile(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val palette = LocalAppPalette.current
-    val color = when (icon) {
-        Icons.Filled.Info -> Color(0xFF367C72)
-        Icons.Filled.Person -> Color(0xFF7961A6)
-        Icons.Filled.Add -> Color(0xFFAE6D35)
-        else -> palette.brand
-    }
-    val shape = RoundedCornerShape(18.dp)
-    Surface(onClick = onClick, modifier = modifier.editionRim(shape), shape = shape, color = EditionSurface) {
-        Column(Modifier.heightIn(min = 110.dp).padding(15.dp)) {
-            Box(Modifier.size(42.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(
-                listOf(color.copy(alpha = 0.26f), color.copy(alpha = 0.08f)))),
-                contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = if (androidx.compose.foundation.isSystemInDarkTheme()) palette.ink else color,
-                    modifier = Modifier.size(22.dp))
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(title, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = Muted, fontSize = 11.sp, lineHeight = 16.sp)
-        }
-    }
 }
 
 @Composable

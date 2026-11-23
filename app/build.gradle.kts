@@ -134,6 +134,7 @@ kotlin {
 }
 
 dependencies {
+    implementation("com.google.zxing:core:3.5.3")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

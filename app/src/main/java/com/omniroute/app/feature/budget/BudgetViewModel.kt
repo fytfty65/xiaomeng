@@ -56,6 +56,7 @@ data class BudgetUiState(
     val actionError: String? = null,
     val notice: String? = null,
     val showAddExpense: Boolean = false,
+    val entryCategory: String? = null,
     val showSetBudget: Boolean = false,
     /** 规划阶段参考预算：目的地、天数与估算金额（元）。 */
     val destination: String = "",
@@ -122,7 +123,11 @@ class BudgetViewModel(
         }
     }
 
-    fun openAddExpense() = _state.update { it.copy(showAddExpense = true, actionError = null) }
+    fun openAddExpense() = openCategorizedExpense(null)
+
+    fun openCategorizedExpense(category: String?) = _state.update {
+        it.copy(showAddExpense = true, entryCategory = category, actionError = null)
+    }
 
     fun dismissAddExpense() {
         if (_state.value.submitting) return
@@ -257,7 +262,7 @@ class BudgetViewModel(
      */
     fun submitReceipt(uri: Uri) {
         if (_state.value.recognizing || _state.value.submitting) return
-        _state.update { it.copy(recognizing = true, actionError = null) }
+        _state.update { it.copy(recognizing = true, entryCategory = null, actionError = null) }
         viewModelScope.launch {
             try {
                 val text = ReceiptRecognizer.recognize(context, uri)

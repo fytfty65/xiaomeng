@@ -1,18 +1,14 @@
 package com.omniroute.app.feature.community
 
+import com.omniroute.app.core.ui.theme.FolioSerif
 import com.omniroute.app.core.ui.components.DestinationCover
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.foundation.shape.CircleShape
-import com.omniroute.app.core.ui.theme.editionRim
 import com.omniroute.app.core.planning.PlanRequest
-import com.omniroute.app.core.ui.components.SeasonArtwork
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
 import com.omniroute.app.core.ui.theme.edition
-import com.omniroute.app.core.ui.theme.EditionSurface
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.font.FontFamily
 import com.omniroute.app.core.ui.theme.seasonBackdrop
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -176,7 +172,7 @@ private fun Feed(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.community_title),
-                        fontSize = 26.sp,
+                        fontFamily = FolioSerif, fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = palette.ink,
                     )
@@ -286,18 +282,18 @@ private fun PostCard(
     val style = LocalJourneySeason.current.edition
     val preview = remember(post.content) { readPostPreview(post.content) }
     Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = EditionSurface,
+        shape = RoundedCornerShape(3.dp),
+        color = Color.Transparent,
         modifier = Modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick),
     ) {
         Column {
-            DestinationCover(post.city, preview.stops.any { "天池" in it }, Modifier.fillMaxWidth().height(180.dp)) {
-                Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(75.dp)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xB3131821)))))
+            DestinationCover(post.city, preview.stops.any { "天池" in it }, Modifier.fillMaxWidth().aspectRatio(4f / 3f), creditAlignment = Alignment.BottomEnd) {
+                Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(75.dp)
+                    .background(Brush.verticalGradient(listOf(Color(0xAE131821), Color.Transparent))))
                 if (post.city.isNotBlank()) {
-                    Row(Modifier.align(Alignment.BottomStart).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.align(Alignment.TopStart).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.LocationOn, null, tint = Color.White, modifier = Modifier.size(17.dp))
                         Text(listOfNotNull(post.city, preview.days?.let { "$it 天" }).joinToString(" · "),
                             color = Color.White, fontFamily = style.titleFont, fontWeight = FontWeight.Bold, fontSize = 19.sp)
@@ -312,15 +308,42 @@ private fun PostCard(
                     }
                 }
             }
-            Column(Modifier.padding(14.dp)) {
+            Column(Modifier.padding(horizontal = 2.dp, vertical = 12.dp)) {
+                if (post.title.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(9.dp))
+                    Text(
+                        text = post.title,
+                        fontSize = 19.sp,
+                        fontFamily = style.titleFont,
+                        fontWeight = style.titleWeight,
+                        color = palette.ink,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (preview.stops.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(preview.stops.take(3).joinToString("  →  "), color = palette.muted, fontSize = 12.sp, lineHeight = 18.sp)
+                }
+                if (preview.summary.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = preview.summary,
+                        fontSize = 12.5.sp,
+                        color = palette.ink.copy(alpha = 0.82f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RemoteAvatar(
                         path = post.avatarUrl,
                         fallback = post.author.take(1).uppercase(),
-                        size = 34.dp,
+                        size = 23.dp,
                         background = palette.brandTint,
                         foreground = palette.brand,
-                        fontSize = 14.sp,
+                        fontSize = 11.sp,
                         contentDescription = null,
                     )
                     Spacer(modifier = Modifier.width(9.dp))
@@ -341,52 +364,7 @@ private fun PostCard(
                     }
                 }
 
-                if (post.title.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(9.dp))
-                    Text(
-                        text = post.title,
-                        fontSize = 19.sp,
-                        fontFamily = style.titleFont,
-                        fontWeight = style.titleWeight,
-                        color = palette.ink,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (preview.stops.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(preview.stops.take(3).joinToString("  →  "), color = palette.brand, fontSize = 12.sp,
-                        lineHeight = 18.sp, modifier = Modifier.clip(RoundedCornerShape(10.dp))
-                            .background(palette.brandTint).padding(horizontal = 9.dp, vertical = 5.dp))
-                }
-                if (preview.summary.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(5.dp))
-                    Text(
-                        text = preview.summary,
-                        fontSize = 12.5.sp,
-                        color = palette.ink.copy(alpha = 0.82f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (post.tags.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(9.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        val tags = post.tags.take(4).map { "#$it" }
-                        tags.forEach { tag ->
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(50))
-                                    .background(palette.tagBg)
-                                    .padding(horizontal = 8.dp, vertical = 3.dp),
-                            ) {
-                                Text(text = tag, fontSize = 10.sp, color = palette.muted)
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     CountAction(
                         text = stringResource(R.string.community_like),

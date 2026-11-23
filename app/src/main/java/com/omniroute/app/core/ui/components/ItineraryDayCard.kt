@@ -1,17 +1,15 @@
 package com.omniroute.app.core.ui.components
 
-import com.omniroute.app.core.ui.theme.editionRim
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.PathEffect
-import com.omniroute.app.core.ui.theme.EditionSurface
+import androidx.compose.foundation.layout.fillMaxSize
+import com.omniroute.app.core.ui.theme.FolioSerif
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.FlowRow
 import com.omniroute.app.core.ui.theme.LocalAppPalette
 
 import android.content.Context
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,7 +42,6 @@ import androidx.compose.ui.unit.sp
 import com.omniroute.app.R
 import com.omniroute.app.core.planning.TripItinerary
 import com.omniroute.app.feature.auth.BrandOrange
-import com.omniroute.app.feature.auth.CardBorder
 import com.omniroute.app.feature.auth.Ink
 import com.omniroute.app.feature.auth.Muted
 
@@ -58,12 +55,12 @@ fun ItineraryDayCard(
     onItemClick: ((TripItinerary.Item) -> Unit)? = null,
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(0.dp),
         // 跟随主题语义面底，深色模式下不再出现刺眼的白卡。
-        color = EditionSurface,
-        modifier = modifier.editionRim(RoundedCornerShape(14.dp)).fillMaxWidth(),
+        color = Color.Transparent,
+        modifier = modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -119,17 +116,22 @@ fun ItineraryDayCard(
                     modifier = Modifier.padding(top = 6.dp),
                 )
             }
-            val track = BrandOrange
-            Column(Modifier.fillMaxWidth().padding(top = 8.dp).drawBehind {
-                drawLine(
-                    Brush.verticalGradient(listOf(track, track.copy(alpha = 0.18f))), Offset(5.dp.toPx(), 10.dp.toPx()),
-                    Offset(5.dp.toPx(), size.height - 9.dp.toPx()), 2.dp.toPx(),
-                )
-            }) {
-                day.items.forEach { item ->
-                    Row(Modifier.padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
-                        Box(Modifier.padding(start = 2.dp, top = 8.dp, end = 8.dp).size(6.dp)
-                            .clip(CircleShape).background(track))
+            Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                day.items.forEachIndexed { index, item ->
+                    HorizontalDivider(color = LocalAppPalette.current.divider)
+                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        val picture = when (item.name?.trim()) {
+                            "新疆国际大巴扎", "乌鲁木齐国际大巴扎" -> R.drawable.destination_bazaar
+                            "天山天池" -> R.drawable.destination_tianchi
+                            "青岛栈桥", "栈桥" -> R.drawable.destination_qingdao
+                            else -> null
+                        }
+                        Box(Modifier.size(if (picture == null) 38.dp else 52.dp), contentAlignment = Alignment.Center) {
+                            if (picture != null) Image(painterResource(picture), null, Modifier.fillMaxSize()
+                                .clip(RoundedCornerShape(4.dp)), contentScale = ContentScale.Crop)
+                            else Text("%02d".format(index + 1), color = Muted, fontFamily = FolioSerif, fontSize = 23.sp)
+                        }
+                        Spacer(Modifier.width(8.dp))
                         ItineraryItemRow(item, isBooked(item), onItemClick)
                     }
                 }

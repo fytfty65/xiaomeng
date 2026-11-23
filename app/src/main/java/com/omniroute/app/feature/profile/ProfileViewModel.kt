@@ -28,6 +28,7 @@ internal data class ProfileUiState(
     val loadingProfile: Boolean = true,
     val profileError: String? = null,
     val tripCount: Int = 0,
+    val latestTrip: com.omniroute.app.core.network.dto.TripPlanDto? = null,
     val cityCount: Int? = null,
     val tripCountError: Boolean = false,
     val editing: Boolean = false,
@@ -105,7 +106,7 @@ internal class ProfileViewModel(
             }
             outcome.onSuccess { trips ->
                 val cityCount = trips.mapNotNull { trip -> trip.destCity?.trim()?.takeIf(String::isNotEmpty) }.distinct().size
-                _state.update { it.copy(tripCount = trips.size, cityCount = cityCount, tripCountError = false) }
+                _state.update { it.copy(tripCount = trips.size, latestTrip = trips.maxByOrNull { trip -> trip.createdAt.orEmpty() }, cityCount = cityCount, tripCountError = false) }
             }.onFailure {
                 _state.update { it.copy(tripCountError = true) }
             }

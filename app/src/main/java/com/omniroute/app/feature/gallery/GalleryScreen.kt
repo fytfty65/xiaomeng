@@ -1,20 +1,21 @@
 package com.omniroute.app.feature.gallery
 
-import androidx.compose.ui.BiasAlignment
-import androidx.compose.foundation.shape.CircleShape
-import com.omniroute.app.core.ui.theme.editionRim
+import com.omniroute.app.core.ui.theme.FolioSerif
+import com.omniroute.app.core.ui.theme.FolioDigits
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import com.omniroute.app.core.ui.SystemBarIcons
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.foundation.layout.offset
 import com.omniroute.app.core.ui.components.SeasonArtwork
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
 import com.omniroute.app.core.ui.theme.edition
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
@@ -61,7 +62,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -74,7 +74,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -202,12 +201,13 @@ private fun GalleryContent(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.gallery_title),
-                    fontSize = 26.sp,
+                    fontFamily = FolioSerif, fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     color = palette.ink,
                 )
                 Text(
-                    text = stringResource(R.string.gallery_sub),
+                    text = "${LocalJourneySeason.current.name.uppercase()}   ROLL   /   ${"%02d".format(state.photos.size)} FRAMES",
+                    fontFamily = FolioDigits, letterSpacing = 1.3.sp,
                     fontSize = 12.sp,
                     color = palette.muted,
                 )
@@ -277,27 +277,29 @@ private fun GalleryContent(
 private fun GalleryEmpty(enabled: Boolean, onPick: () -> Unit) {
     val palette = LocalAppPalette.current
     val style = LocalJourneySeason.current.edition
-    Box(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentAlignment = BiasAlignment(0f, -0.20f)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.widthIn(max = 280.dp).fillMaxWidth().height(195.dp), contentAlignment = Alignment.Center) {
-                listOf(-16f, 14f, -4f).forEachIndexed { index, angle ->
-                    val alignment = listOf(Alignment.CenterStart, Alignment.CenterEnd, Alignment.Center)[index]
-                    Surface(modifier = Modifier.align(alignment).rotate(angle).width(if (index == 2) 138.dp else 117.dp),
-                        shape = RoundedCornerShape(4.dp), color = Color.White, shadowElevation = 11.dp) {
-                        Column(Modifier.padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 17.dp)) {
-                            SeasonArtwork(Modifier.fillMaxWidth().height(if (index == 2) 133.dp else 110.dp),
-                                portrait = index == 1, cover = index == 2)
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        repeat(3) { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                repeat(2) { col ->
+                    val index = row * 2 + col
+                    val border = palette.ink.copy(alpha = 0.24f)
+                    Box(Modifier.weight(1f).aspectRatio(0.98f).drawBehind {
+                        drawRect(border, style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))))
+                    }.then(if (index == 0 && enabled) Modifier.clickable(role = Role.Button, onClick = onPick) else Modifier)) {
+                        if (index == 0) {
+                            SeasonArtwork(Modifier.matchParentSize(), cover = true)
+                            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xB8151A1D)))))
+                            Text(if (enabled) "＋ 上传第一张实拍" else "第一帧旅途光影", color = Color.White, fontFamily = FolioSerif,
+                                fontSize = 17.sp, modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
+                        } else if (index == 1) {
+                            Text("把一路见到的风景，\n留在这里。", color = palette.muted, fontFamily = FolioSerif,
+                                fontSize = 16.sp, lineHeight = 26.sp, modifier = Modifier.align(Alignment.Center).padding(12.dp))
                         }
+                        Text("%02d".format(index + 1), fontFamily = FolioDigits, fontSize = 15.sp,
+                            color = if (index == 0) Color.White else palette.muted,
+                            modifier = Modifier.align(Alignment.TopStart).padding(10.dp))
                     }
-                }
-            }
-            Text("第一帧旅途光影", fontFamily = style.titleFont, fontWeight = FontWeight.SemiBold, color = palette.ink, fontSize = 28.sp)
-            Text(stringResource(R.string.gallery_empty), color = palette.muted, textAlign = TextAlign.Center, fontSize = 13.sp)
-            if (enabled) {
-                Box(Modifier.editionRim(CircleShape).clip(CircleShape).background(style.actionGradient)
-                    .clickable(role = Role.Button, onClick = onPick).padding(horizontal = 22.dp, vertical = 13.dp),
-                    contentAlignment = Alignment.Center) {
-                    Text("＋  上传第一张实拍", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }

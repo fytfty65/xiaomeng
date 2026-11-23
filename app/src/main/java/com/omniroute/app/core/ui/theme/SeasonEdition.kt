@@ -2,7 +2,6 @@ package com.omniroute.app.core.ui.theme
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.Font
 import androidx.compose.foundation.background
@@ -11,12 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.Alignment
 import com.omniroute.app.core.ui.ContentMaxWidth
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -40,42 +33,46 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.omniroute.app.R
 
+internal val FolioSerif = FontFamily(Font(R.font.folio_serif, FontWeight.Medium))
+internal val FolioDigits = FontFamily(Font(R.font.barlow_condensed_semibold, FontWeight.SemiBold))
+
 internal data class SeasonEdition(
     val accent: Color,
     val secondary: Color,
     val glow: Color,
     val light: Color,
     val deep: Color,
+    val anchor: Color,
     val paper: Color,
     val image: Int,
     val portrait: Int,
     val titleFont: FontFamily,
     val titleWeight: FontWeight,
 ) {
-    val actionGradient: Brush get() = Brush.linearGradient(listOf(light, accent))
+    val actionGradient: Brush get() = Brush.linearGradient(listOf(deep, accent))
 }
 
 private val editionStyles = JourneySeason.entries.associateWith { season ->
     when (season) {
         JourneySeason.Spring -> SeasonEdition(
-            Color(0xFFD94B70), Color(0xFF8CE0C8), Color(0xFFFF9EB8), Color(0xFFF06A8A), Color(0xFFC93E63),
-            Color(0xFFFDF7F9), R.drawable.pass_window_spring, R.drawable.pass_background_spring,
-            FontFamily(Font(R.font.omni_serif_medium)), FontWeight.SemiBold,
+            Color(0xFFD95B7A), Color(0xFF8CE0C8), Color(0xFFFF9EB8), Color(0xFFF06A8A), Color(0xFFAC3857),
+            Color(0xFF2B332E), Color(0xFFFAF8F6), R.drawable.pass_window_spring, R.drawable.pass_background_spring,
+            FolioSerif, FontWeight.Medium,
         )
         JourneySeason.Summer -> SeasonEdition(
-            Color(0xFF0D7FA6), Color(0xFFFFB978), Color(0xFF52C7EA), Color(0xFF1BA9CE), Color(0xFF0A6C8F),
-            Color(0xFFF2FAFD), R.drawable.pass_window_summer, R.drawable.pass_background_summer,
-            FontFamily.SansSerif, FontWeight.Bold,
+            Color(0xFF0088B2), Color(0xFFFFB978), Color(0xFF52C7EA), Color(0xFF1BA9CE), Color(0xFF0A6C8F),
+            Color(0xFF102A3A), Color(0xFFF7F9FA), R.drawable.pass_window_summer, R.drawable.pass_background_summer,
+            FolioSerif, FontWeight.Medium,
         )
         JourneySeason.Autumn -> SeasonEdition(
-            Color(0xFFB54B27), Color(0xFFEBC773), Color(0xFFF29F67), Color(0xFFD96F43), Color(0xFFA33F1E),
-            Color(0xFFFBF5EE), R.drawable.pass_window_autumn, R.drawable.pass_background_autumn,
-            FontFamily(Font(R.font.omni_serif_medium)), FontWeight.SemiBold,
+            Color(0xFFC2562D), Color(0xFFEBC773), Color(0xFFF29F67), Color(0xFFD96F43), Color(0xFFA33F1E),
+            Color(0xFF2F221C), Color(0xFFF8F4EE), R.drawable.pass_window_autumn, R.drawable.pass_background_autumn,
+            FolioSerif, FontWeight.Medium,
         )
         JourneySeason.Winter -> SeasonEdition(
-            Color(0xFF573F9C), Color(0xFF7AB8F5), Color(0xFF9683EC), Color(0xFF7F66C9), Color(0xFF4C358F),
-            Color(0xFFF4F3FB), R.drawable.pass_window_winter, R.drawable.pass_background_winter,
-            FontFamily.SansSerif, FontWeight.Medium,
+            Color(0xFF5B48A8), Color(0xFF7AB8F5), Color(0xFF9683EC), Color(0xFF7F66C9), Color(0xFF4C358F),
+            Color(0xFF1C1B2E), Color(0xFFF6F7FA), R.drawable.pass_window_winter, R.drawable.pass_background_winter,
+            FolioSerif, FontWeight.Medium,
         )
     }
 
@@ -130,88 +127,27 @@ internal fun SeasonEditionTheme(season: JourneySeason, content: @Composable () -
 
 internal fun Modifier.seasonBackdrop(): Modifier = composed {
     val palette = LocalAppPalette.current
-    val season = LocalJourneySeason.current
-    val style = season.edition
-    val atmosphere = rememberInfiniteTransition(label = "edition atmosphere")
-    val drift by atmosphere.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(18_000, easing = LinearEasing), RepeatMode.Reverse),
-        label = "edition drift",
-    )
-    drawWithCache {
-        val warm = Brush.radialGradient(
-            listOf(style.glow.copy(alpha = 0.34f), Color.Transparent),
-            center = Offset(size.width * 0.04f, size.height * 0.10f),
-            radius = size.width.coerceAtLeast(1f) * 0.86f,
-        )
-        val cool = Brush.radialGradient(
-            listOf(style.secondary.copy(alpha = 0.28f), Color.Transparent),
-            center = Offset(size.width * 0.91f, size.height * 0.13f),
-            radius = size.width.coerceAtLeast(1f) * 0.76f,
-        )
-        val bottomLight = Brush.radialGradient(listOf(style.glow.copy(alpha = 0.17f), Color.Transparent),
-            center = Offset(size.width * 0.87f, size.height * 0.91f), radius = size.width.coerceAtLeast(1f) * 0.80f)
-        val marks = List(5) { index ->
-            Offset(
-                size.width * ((index * 47 + 11) % 100) / 100f,
-                size.height * ((index * 29 + 7) % 70) / 100f,
-            )
-        }
-        val radius = 2.dp.toPx()
-        onDrawBehind {
-            drawRect(palette.background)
-            drawRect(warm)
-            drawRect(cool)
-            drawRect(bottomLight)
-            marks.forEachIndexed { index, anchor ->
-                val y = if (season == JourneySeason.Autumn) 0f else drift * (14.dp.toPx() + index)
-                val point = anchor + Offset(y * 0.45f, y)
-                val ink = if (index % 2 == 0) style.accent else style.secondary
-                when (season) {
-                    JourneySeason.Spring -> drawOval(
-                        ink.copy(alpha = 0.15f), point,
-                        androidx.compose.ui.geometry.Size(radius, radius * 2.2f),
-                    )
-                    JourneySeason.Summer -> drawArc(
-                        ink.copy(alpha = 0.12f), 10f, 156f, false, point,
-                        androidx.compose.ui.geometry.Size(radius * 7f, radius * 2f), style = Stroke(radius * 0.3f),
-                    )
-                    JourneySeason.Autumn -> drawCircle(ink.copy(alpha = 0.13f), radius * 0.4f, point)
-                    JourneySeason.Winter -> drawCircle(ink.copy(alpha = 0.13f), radius * (index % 3 + 1), point)
-                }
-            }
-        }
-    }
+    background(palette.background)
 }
 
 internal val EditionSurface: Color
     @Composable get() = LocalAppPalette.current.surface.copy(alpha = 0.80f)
 
-/** A colored shadow and a directional rim leave the page light visible through the glass. */
-internal fun Modifier.editionRim(shape: Shape = RoundedCornerShape(22.dp)): Modifier = composed {
-    val style = LocalJourneySeason.current.edition
-    val rim = if (isSystemInDarkTheme()) 0.26f else 0.98f
-    shadow(8.dp, shape, clip = false, ambientColor = style.glow.copy(alpha = 0.22f),
-        spotColor = style.accent.copy(alpha = 0.21f))
-        .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = rim),
-            Color.White.copy(alpha = rim * 0.20f))), shape)
+internal fun Modifier.editionRim(shape: Shape = RoundedCornerShape(12.dp)): Modifier = composed {
+    border(0.7.dp, LocalAppPalette.current.ink.copy(alpha = 0.10f), shape)
 }
 
 internal fun Modifier.inkFoil(): Modifier = composed {
     val style = LocalJourneySeason.current.edition
     drawWithCache {
-        val end = lerp(style.deep, Color(0xFF18182E), 0.56f)
-        val ground = Brush.linearGradient(listOf(style.deep, lerp(style.deep, end, 0.55f), end))
-        val center = Offset(size.width * 0.91f, size.height * 0.06f)
-        val halo = Brush.radialGradient(listOf(style.secondary.copy(alpha = 0.40f), Color.Transparent),
-            center, size.width.coerceAtLeast(1f) * 0.60f)
+        val ground = Brush.linearGradient(listOf(lerp(style.anchor, style.secondary, 0.10f), style.anchor))
+        val step = 5.dp.toPx()
         onDrawBehind {
             drawRect(ground)
-            drawRect(halo)
-            repeat(3) { ring ->
-                drawCircle(Color.White.copy(alpha = 0.09f), size.width * (0.24f + ring * 0.085f),
-                    center, style = Stroke(0.7.dp.toPx()))
+            var x = -size.height
+            while (x < size.width) {
+                drawLine(Color.White.copy(alpha = 0.025f), Offset(x, size.height), Offset(x + size.height, 0f), 0.6.dp.toPx())
+                x += step
             }
         }
     }

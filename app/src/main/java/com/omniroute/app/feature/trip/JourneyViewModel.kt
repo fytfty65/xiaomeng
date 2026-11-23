@@ -1,5 +1,7 @@
 package com.omniroute.app.feature.trip
 
+import com.omniroute.app.core.planning.TripContentEditor
+import com.omniroute.app.core.ui.components.routeLegText
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -30,6 +32,8 @@ data class JourneyNodeUi(
     val day: Int,
     val status: String,
     val delayMinutes: Int,
+    val incomingLeg: String? = null,
+    val stayMinutes: Int? = null,
 )
 
 data class ReplanCandidateUi(
@@ -321,6 +325,10 @@ class JourneyViewModel(
 
     private fun buildState(previous: JourneyUiState, loaded: Loaded): JourneyUiState {
         val states = loaded.journey?.execution?.states.orEmpty().associateBy { it.nodeKey }
+        val legs = TripContentEditor.readNodes(loaded.trip.content).zipWithNext().mapNotNull { (from, to) ->
+            if (from.day == to.day && from.hasCoordinate() && to.hasCoordinate())
+                "${to.day}:${to.name}" to routeLegText(context, from, to) else null
+        }.toMap()
         val nodes = loaded.routes.mapIndexedNotNull { index, route ->
             val name = (route["name"] ?: route["location"])?.toString()?.trim().orEmpty()
             if (name.isEmpty()) return@mapIndexedNotNull null
@@ -334,6 +342,9 @@ class JourneyViewModel(
                 day = day,
                 status = state?.status ?: "planned",
                 delayMinutes = state?.delayMinutes ?: 0,
+                incomingLeg = legs[key],
+                stayMinutes = (route["duration_minutes"] ?: route["duration_min"])?.toString()?.toDoubleOrNull()
+                    ?.takeIf { it.isFinite() && it >= 1 && it <= Int.MAX_VALUE }?.toInt(),
             )
         }
         val journey = loaded.journey

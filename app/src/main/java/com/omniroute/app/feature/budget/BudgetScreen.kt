@@ -1,12 +1,23 @@
 package com.omniroute.app.feature.budget
 
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.selection.selectable
+import com.omniroute.app.core.ui.theme.FolioSerif
+import com.omniroute.app.core.ui.theme.FolioDigits
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
 import com.omniroute.app.core.ui.theme.inkFoil
 import com.omniroute.app.core.ui.theme.editionRim
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.ui.graphics.lerp
 import com.omniroute.app.core.ui.theme.EditionSurface
 import com.omniroute.app.core.ui.theme.OmniSeasonLogo
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
@@ -15,7 +26,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontFamily
 import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -165,7 +175,7 @@ fun BudgetScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.budget_title),
-                    fontSize = 25.sp,
+                    fontFamily = FolioSerif, fontSize = 25.sp,
                     fontWeight = FontWeight.Bold,
                     color = palette.ink,
                 )
@@ -266,15 +276,20 @@ fun BudgetScreen(
                 }
 
                 item(key = "manual_entry") {
-                    val shape = RoundedCornerShape(17.dp)
-                    Surface(onClick = viewModel::openAddExpense, enabled = !state.submitting && !state.recognizing,
-                        modifier = Modifier.fillMaxWidth().editionRim(shape), shape = shape, color = EditionSurface) {
-                        Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(42.dp).background(palette.tagBg, RoundedCornerShape(13.dp)),
-                                contentAlignment = Alignment.Center) { Icon(Icons.Filled.Edit, null, tint = palette.brand, modifier = Modifier.size(19.dp)) }
-                            Text("手动记一笔", Modifier.weight(1f).padding(start = 10.dp), color = palette.ink,
-                                fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = palette.muted, modifier = Modifier.size(16.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                        Text("分类快记", color = palette.ink, fontSize = 20.sp, fontFamily = FolioSerif)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("餐饮", "交通", "住宿", "门票").forEachIndexed { i, label ->
+                                Column(Modifier.weight(1f).clickable(enabled = !state.submitting && !state.recognizing, role = Role.Button) {
+                                    viewModel.openCategorizedExpense(label)
+                                }.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CategoryGlyph(i)
+                                    Text(label, color = palette.ink, fontSize = 13.sp, modifier = Modifier.padding(top = 5.dp))
+                                }
+                            }
+                        }
+                        TextButton(onClick = viewModel::openAddExpense, enabled = !state.submitting && !state.recognizing) {
+                            Text("其他类别  →", color = palette.muted, fontSize = 12.sp)
                         }
                     }
                 }
@@ -291,14 +306,18 @@ fun BudgetScreen(
                     items(state.expenses, key = { it.id }) { expense ->
                         ExpenseRow(expense = expense)
                     }
-                } else if (state.hasBudget) {
+                } else if (state.error == null) {
                     item(key = "expenses_empty") {
-                        Text(
-                            text = stringResource(R.string.budget_expenses_empty),
-                            fontSize = 12.sp,
-                            color = palette.muted,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
+                        Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                            HorizontalDivider(color = palette.divider)
+                            Text("支出明细", color = palette.ink, fontFamily = FolioSerif, fontSize = 18.sp, modifier = Modifier.padding(top = 12.dp))
+                            Text(
+                                text = stringResource(R.string.budget_expenses_empty),
+                                fontSize = 12.sp,
+                                color = palette.muted,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -360,6 +379,7 @@ fun BudgetScreen(
 
     if (state.showAddExpense) {
         ExpenseDialog(
+            initialCategory = state.entryCategory,
             currency = state.currency,
             submitting = state.submitting,
             error = state.actionError,
@@ -384,6 +404,27 @@ fun BudgetScreen(
 }
 
 @Composable
+private fun CategoryGlyph(index: Int) {
+    val palette = LocalAppPalette.current
+    Canvas(Modifier.size(45.dp).background(palette.fieldBg, RoundedCornerShape(9.dp)).padding(10.dp)) {
+        val u = size.minDimension / 24f
+        val stroke = Stroke(1.5f * u)
+        fun line(x: Int, y: Int, xx: Int, yy: Int) =
+            drawLine(palette.ink, Offset(x*u, y*u), Offset(xx*u, yy*u), stroke.width, StrokeCap.Round)
+        when (index) {
+            0 -> { for (x in listOf(4, 7, 10)) line(x, 3, x, 10)
+                line(4, 10, 10, 10); line(7, 10, 7, 22); line(18, 3, 18, 22); line(15, 13, 18, 13); line(15, 13, 18, 3) }
+            1 -> { drawRoundRect(palette.ink, Offset(4*u, 3*u), Size(16*u, 15*u), CornerRadius(3*u), style = stroke)
+                line(5, 11, 19, 11); line(8, 18, 5, 22); line(16, 18, 19, 22); line(8, 15, 9, 15); line(15, 15, 16, 15) }
+            2 -> { line(3, 5, 3, 21); line(3, 16, 21, 16); line(21, 12, 21, 21); line(4, 12, 21, 12)
+                drawCircle(palette.ink, 2*u, Offset(8*u, 9*u), style = stroke); line(13, 10, 20, 10) }
+            else -> { drawRoundRect(palette.ink, Offset(2*u, 6*u), Size(20*u, 13*u), CornerRadius(2*u), style = stroke)
+                line(15, 7, 15, 9); line(15, 12, 15, 13); line(15, 16, 15, 18); line(5, 12, 10, 12) }
+        }
+    }
+}
+
+@Composable
 private fun OcrEntryCard(enabled: Boolean, onClick: () -> Unit) {
     val palette = LocalAppPalette.current
     Surface(
@@ -395,12 +436,12 @@ private fun OcrEntryCard(enabled: Boolean, onClick: () -> Unit) {
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            modifier = Modifier.heightIn(min = 92.dp).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(55.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(Brush.linearGradient(listOf(palette.brandTint, palette.tagBg))),
                 contentAlignment = Alignment.Center,
@@ -475,7 +516,7 @@ private fun LedgerCard(
         "warning" -> Color(0xFFF3BF75)
         else -> style.light
     }
-    val shape = RoundedCornerShape(24.dp)
+    val shape = RoundedCornerShape(13.dp)
     val ratio = state.ratio.coerceIn(0.0, 1.0).toFloat()
     Column(
         Modifier.fillMaxWidth().heightIn(min = 186.dp).editionRim(shape).clip(shape).inkFoil().padding(18.dp),
@@ -484,13 +525,10 @@ private fun LedgerCard(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("旅行账本", color = white.copy(alpha = 0.82f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                if (state.hasBudget) {
-                    Text(moneyText(state.spentCents, state.currency), color = white, fontFamily = FontFamily.Monospace, fontSize = 26.sp)
-                    Text("已支出 / ${moneyText(state.totalBudgetCents, state.currency)}", color = white.copy(alpha = 0.82f), fontSize = 12.sp)
-                } else {
-                    Text(stringResource(R.string.budget_empty_title), color = white, fontFamily = style.titleFont, fontSize = 23.sp)
-                    Text(stringResource(R.string.budget_empty_sub), color = white.copy(alpha = 0.83f), fontSize = 12.sp, lineHeight = 17.sp)
-                }
+                Text(moneyText(state.spentCents, state.currency), color = white, fontFamily = FolioDigits,
+                    fontSize = 46.sp, lineHeight = 51.sp)
+                Text(if (state.hasBudget) "已支出 / ${moneyText(state.totalBudgetCents, state.currency)}"
+                    else "累计支出   ·   尚未设定总预算", color = white.copy(alpha = 0.84f), fontSize = 12.sp)
             }
             Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.matchParentSize().padding(4.dp)) {
@@ -499,7 +537,7 @@ private fun LedgerCard(
                     if (ratio > 0f) drawArc(sheen, -90f, ratio * 360f, false, style = stroke)
                 }
                 if (state.hasBudget) {
-                    Text("${(state.ratio * 100).roundToInt()}%", color = white, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                    Text("${(state.ratio * 100).roundToInt()}%", color = white, fontFamily = FolioDigits, fontSize = 12.sp)
                 } else {
                     OmniSeasonLogo(diameter = 34.dp, tint = white.copy(alpha = 0.75f))
                 }
@@ -516,7 +554,7 @@ private fun LedgerCard(
                     color = white.copy(alpha = 0.84f), fontSize = 11.sp)
             }
         }
-        Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Surface(onClick = onEditBudget, shape = CircleShape, color = white) {
                 Box(Modifier.heightIn(min = 40.dp).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
                     Text(stringResource(if (state.hasBudget) R.string.budget_edit_action else R.string.budget_set_action),
@@ -526,10 +564,9 @@ private fun LedgerCard(
             if (!state.hasBudget) state.estimateYuan?.takeIf { it.isFinite() && it >= 1.0 && it <= Int.MAX_VALUE }
                 ?.roundToInt()?.let { estimate ->
                     Surface(onClick = { onUseEstimate(estimate) }, enabled = !state.submitting,
-                        shape = CircleShape, color = white.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, white.copy(alpha = 0.32f))) {
+                        shape = RoundedCornerShape(2.dp), color = Color.Transparent) {
                         Box(Modifier.heightIn(min = 40.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                            Text("采用估算 ¥$estimate", color = white, fontSize = 12.sp)
+                            Text("或采用路书估算  ¥$estimate  →", color = white, fontSize = 12.sp)
                         }
                     }
                 }
@@ -688,6 +725,7 @@ private fun ExpenseRow(expense: BudgetExpenseUi) {
 
 @Composable
 private fun ExpenseDialog(
+    initialCategory: String?,
     currency: String,
     submitting: Boolean,
     error: String?,
@@ -696,13 +734,17 @@ private fun ExpenseDialog(
 ) {
     var amount by rememberSaveable { mutableStateOf("") }
     var note by rememberSaveable { mutableStateOf("") }
-    var category by rememberSaveable { mutableStateOf(EXPENSE_CATEGORIES.first()) }
+    var category by rememberSaveable { mutableStateOf(initialCategory ?: EXPENSE_CATEGORIES.first()) }
     AlertDialog(
         onDismissRequest = { if (!submitting) onDismiss() },
         title = { Text(text = stringResource(R.string.budget_add_title), fontSize = 16.sp) },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                val requester = remember { FocusRequester() }
+                val keyboard = LocalSoftwareKeyboardController.current
+                LaunchedEffect(initialCategory) { if (initialCategory != null) { requester.requestFocus(); keyboard?.show() } }
                 OutlinedTextField(
+                    modifier = Modifier.focusRequester(requester),
                     value = amount,
                     onValueChange = { amount = it.take(12) },
                     singleLine = true,
@@ -880,7 +922,7 @@ private fun SelectChip(
         color = if (selected) palette.brand else palette.fieldBg,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick),
     ) {
         Text(
             text = text,

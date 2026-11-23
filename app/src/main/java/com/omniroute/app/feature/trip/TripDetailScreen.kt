@@ -1,5 +1,17 @@
 package com.omniroute.app.feature.trip
 
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.edition
+import androidx.compose.foundation.layout.*
+import com.omniroute.app.core.ui.components.CoverBack
+import com.omniroute.app.core.ui.components.CoverStatusShade
+import com.omniroute.app.core.ui.SystemBarIcons
+import androidx.compose.material3.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.material3.Text
@@ -100,6 +112,7 @@ fun TripDetailScreen(
     }
 
     val trip = state.trip
+    SystemBarIcons(false, !androidx.compose.foundation.isSystemInDarkTheme())
 
     Box(
         modifier = Modifier
@@ -112,38 +125,50 @@ fun TripDetailScreen(
             modifier = Modifier
                 .fillMaxHeight()
                 .widthIn(max = ContentMaxWidth)
-                .windowInsetsPadding(WindowInsets.safeDrawing),
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)),
         ) {
-            // 顶部全局导航栏（内置统一星轨矢量 Logo）
-            TripTopBar(
-                cityName = trip?.destCity,
-                actionsEnabled = trip != null && !state.actionBusy,
-                onBack = onBack,
-                onShare = {
-                    val shareText = trip?.let { buildTripShareText(context, it) }.orEmpty()
-                    if (shareText.isBlank()) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.trip_share_empty),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    } else {
-                        val send = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_SUBJECT, trip?.title.orEmpty())
-                            putExtra(Intent.EXTRA_TEXT, shareText)
-                        }
-                        context.startActivity(
-                            Intent.createChooser(
-                                send,
-                                context.getString(R.string.trip_share_chooser),
-                            ),
-                        )
+            val share: () -> Unit = {
+                val shareText = trip?.let { buildTripShareText(context, it) }.orEmpty()
+                if (shareText.isBlank()) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.trip_share_empty),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                } else {
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, trip?.title.orEmpty())
+                        putExtra(Intent.EXTRA_TEXT, shareText)
                     }
-                },
-                onEdit = { viewModel.openRename() },
-                onDelete = { viewModel.openDelete() },
-            )
+                    context.startActivity(
+                        Intent.createChooser(
+                            send,
+                            context.getString(R.string.trip_share_chooser),
+                        ),
+                    )
+                }
+            }
+            val toolbar: @Composable () -> Unit = {
+                var menu by remember { mutableStateOf(false) }
+                Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    CoverBack(onBack)
+                    Box {
+                        Surface(onClick = { menu = true }, enabled = trip != null && !state.actionBusy,
+                            color = Color.Black.copy(alpha = 0.45f), shape = CircleShape) {
+                            Text("•••", color = Color.White, modifier = Modifier.semantics { contentDescription = "更多行程操作" }
+                                .padding(horizontal = 12.dp, vertical = 7.dp))
+                        }
+                        DropdownMenu(menu, { menu = false }) {
+                            listOf(R.string.trip_share to share, R.string.trip_rename_desc to { viewModel.openRename() },
+                                R.string.trip_delete_desc to { viewModel.openDelete() }).forEach { (label, act) ->
+                                DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = { menu = false; act() })
+                            }
+                        }
+                    }
+                }
+            }
 
             val itinerary = remember(trip?.content) {
                 trip?.let { TripItinerary.parse(it.content) }
@@ -156,11 +181,12 @@ fun TripDetailScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .wheelScroll(listState),
-                contentPadding = PaddingValues(horizontal = 20.dp),
+                contentPadding = PaddingValues(0.dp),
             ) {
                 if (trip == null) {
+                    item { Box(Modifier.fillMaxWidth().background(LocalJourneySeason.current.edition.anchor)) { toolbar() } }
                     item(key = "detail_state") {
-                        Column {
+                        Column(Modifier.padding(horizontal = 20.dp)) {
                             Spacer(modifier = Modifier.height(10.dp))
                             state.actionError?.let {
                                 InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
@@ -176,8 +202,9 @@ fun TripDetailScreen(
                         }
                     }
                 } else {
+                    item(key = "cover") { GuideCover(trip, toolbar) }
                     item(key = "detail_header") {
-                        Column {
+                        Column(Modifier.padding(horizontal = 20.dp)) {
                             Spacer(modifier = Modifier.height(10.dp))
                             state.actionError?.let {
                                 InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
@@ -199,7 +226,9 @@ fun TripDetailScreen(
                     // 最多 30 天也只在可视范围内组合卡片；dayNumber 作为稳定 key 避免滚动时重建。
                     if (itinerary != null && itinerary.hasContent()) {
                         stickyHeader(key = "day_picker") {
-                            Box(Modifier.fillMaxWidth().background(LocalAppPalette.current.background)) {
+                            Box(Modifier.fillMaxWidth().background(LocalAppPalette.current.background)
+                                .then(if (listState.firstVisibleItemIndex >= 2) Modifier.statusBarsPadding() else Modifier)
+                                .padding(horizontal = 20.dp)) {
                                 Column {
                                     ItineraryDayPicker(itinerary.days.map { it.dayNumber }, selectedDay, { selectedDay = it }, overview = true)
                                     if (itinerary.days.any { day -> day.items.any { it.isEstimated && it.priceLabel != null } }) {
@@ -215,6 +244,7 @@ fun TripDetailScreen(
                         ) { day ->
                             Column {
                                 ItineraryDayCard(
+                                    modifier = Modifier.padding(horizontal = 20.dp),
                                     day = day,
                                     showEstimatedNote = false,
                                     isBooked = { item ->
@@ -232,6 +262,7 @@ fun TripDetailScreen(
                 }
             }
         }
+        CoverStatusShade()
     }
 
     // 已保存行程的路线编辑：复用规划结果页的编辑页，返回/完成都会把改动落库。

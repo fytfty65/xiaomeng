@@ -27,6 +27,7 @@ internal fun DestinationCover(
     city: String?,
     visitsTianchi: Boolean,
     modifier: Modifier,
+    creditAlignment: Alignment = Alignment.TopStart,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val photo = when (city?.trim()?.removeSuffix("市")) {
@@ -43,7 +44,7 @@ internal fun DestinationCover(
     Box(modifier) {
         Image(painterResource(photo.art), photo.place, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
         content()
-        IconButton(onClick = { showCredit = true }, modifier = Modifier.align(Alignment.TopStart)) {
+        IconButton(onClick = { showCredit = true }, modifier = Modifier.align(creditAlignment)) {
             Surface(shape = CircleShape, color = Color.Black.copy(alpha = 0.27f)) {
                 Icon(Icons.Filled.Info, "风景摄影署名", modifier = Modifier.padding(5.dp).size(15.dp), tint = Color.White)
             }

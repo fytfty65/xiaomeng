@@ -1,14 +1,14 @@
 package com.omniroute.app.feature.plan
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.PathEffect
+import com.omniroute.app.core.ui.theme.FolioSerif
+import com.omniroute.app.core.ui.theme.FolioDigits
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.omniroute.app.core.ui.theme.editionRim
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Face
@@ -17,8 +17,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.List
 import com.omniroute.app.core.ui.theme.JourneySeason
-import androidx.compose.ui.text.font.FontFamily
-import com.omniroute.app.core.ui.theme.OmniSeasonLogo
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
 import com.omniroute.app.core.ui.theme.EditionSurface
 import com.omniroute.app.core.ui.theme.edition
@@ -27,7 +25,6 @@ import androidx.compose.ui.graphics.Brush
 import android.content.Context
 import androidx.compose.material3.minimumInteractiveComponentSize
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -37,7 +34,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -55,7 +51,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
@@ -64,13 +59,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omniroute.app.R
 import com.omniroute.app.core.room.RoomSession
-import com.omniroute.app.core.ui.components.OmniLogoMark
 import com.omniroute.app.feature.auth.BrandOrange
 import com.omniroute.app.feature.auth.InfoBg
 import com.omniroute.app.feature.auth.InfoFg
@@ -131,115 +124,38 @@ private fun ChatIdeaCard(
         JourneySeason.Autumn -> listOf("阿尔山看秋林，3天", "喀纳斯徒步，4天", "腾冲看银杏，3天")
         JourneySeason.Winter -> listOf("阿勒泰滑雪，4天慢节奏", "禾木雪景摄影，3天", "长白山看雾凇，3天")
     }
-    val shape = RoundedCornerShape(18.dp)
-    Surface(
-        shape = shape,
-        color = EditionSurface,
-        modifier = Modifier.fillMaxWidth().border(1.5.dp, Brush.linearGradient(listOf(style.glow, style.secondary)), shape),
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OmniSeasonLogo(diameter = 28.dp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.plan_form_chat_title),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink,
-                )
+    Column(Modifier.fillMaxWidth()) {
+        Text("下一站，\n你想奔赴哪场风景？", color = Ink, fontSize = 30.sp, lineHeight = 41.sp, fontFamily = FolioSerif)
+        Spacer(Modifier.height(12.dp))
+        BasicTextField(value = text, onValueChange = { if (it.length <= 200) onTextChange(it) },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 62.dp),
+            textStyle = TextStyle(fontSize = 16.sp, lineHeight = 25.sp, color = Ink),
+            cursorBrush = SolidColor(BrandOrange),
+            decorationBox = { input ->
+                Box {
+                    if (text.isEmpty()) Text(stringResource(R.string.plan_form_chat_placeholder),
+                        color = Muted, fontSize = 14.sp, lineHeight = 23.sp)
+                    input()
+                }
+            })
+        HorizontalDivider(color = PlanFormDivider)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(13.dp)) {
+            seasonExamples.forEach { example ->
+                Text(example.substringBefore("，"), color = BrandOrange, fontSize = 12.sp,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable(role = Role.Button) { onTextChange(example) }.padding(vertical = 9.dp))
             }
-
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            if (parsed != null) TextButton(onClick = onConfirm) { Text(stringResource(R.string.plan_form_chat_confirm)) }
+            Surface(onClick = onApply, enabled = !parsing, color = style.anchor, shape = RoundedCornerShape(5.dp)) {
+                Text(stringResource(if (parsing) R.string.plan_form_chat_parsing else R.string.plan_form_chat_apply) + "  ↗",
+                    color = Color.White, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 15.dp, vertical = 8.dp))
+            }
+        }
+        hint?.let {
             Spacer(modifier = Modifier.height(9.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(PlanTagBg)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-            ) {
-                if (text.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.plan_form_chat_placeholder),
-                        fontSize = 12.sp,
-                        color = Muted,
-                    )
-                }
-                BasicTextField(
-                    value = text,
-                    onValueChange = { if (it.length <= 200) onTextChange(it) },
-                    textStyle = TextStyle(fontSize = 13.sp, color = Ink),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 72.dp),
-                )
-            }
-
-            Spacer(Modifier.height(5.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                seasonExamples.forEach { example ->
-                    Surface(onClick = { onTextChange(example) }, shape = CircleShape, color = PlanOrangeLightBg,
-                        modifier = Modifier.padding(vertical = 3.dp)) {
-                        Text(example, fontSize = 12.sp, color = BrandOrange,
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp))
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(9.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 只有拿到结构化结果后才显示「确认填入」，避免误识别直接覆盖表单。
-                if (parsed != null) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = PlanOrangeLightBg,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .minimumInteractiveComponentSize()
-                            .clickable(role = Role.Button, onClick = onConfirm),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.plan_form_chat_confirm),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = BrandOrange,
-                            modifier = Modifier.padding(horizontal = 13.dp, vertical = 7.dp),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = BrandOrange,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .minimumInteractiveComponentSize()
-                        .clickable(enabled = !parsing, role = Role.Button, onClick = onApply),
-                ) {
-                    Text(
-                        text = (if (parsing) "" else "✦  ") + stringResource(
-                            if (parsing) {
-                                R.string.plan_form_chat_parsing
-                            } else {
-                                R.string.plan_form_chat_apply
-                            },
-                        ),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 7.dp),
-                    )
-                }
-            }
-
-            hint?.let {
-                Spacer(modifier = Modifier.height(9.dp))
-                InlineBanner(text = it, bg = InfoBg, fg = InfoFg, icon = Icons.Filled.Info)
-            }
+            InlineBanner(text = it, bg = InfoBg, fg = InfoFg, icon = Icons.Filled.Info)
         }
     }
 }
@@ -270,26 +186,6 @@ internal fun FormContent(
     onTogglePreference: (String) -> Unit,
     room: RoomSession?,
 ) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        OmniSeasonLogo(diameter = 42.dp)
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(
-                text = stringResource(R.string.plan_form_engine_title),
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Ink,
-            )
-            Text(
-                text = stringResource(R.string.plan_form_engine_subtitle),
-                fontSize = 12.sp,
-                color = Muted,
-            )
-        }
-    }
-
-    Spacer(modifier = Modifier.height(18.dp))
-
     ChatIdeaCard(
         text = chatText,
         onTextChange = onChatTextChange,
@@ -302,86 +198,23 @@ internal fun FormContent(
 
     Spacer(modifier = Modifier.height(22.dp))
 
-    FormSectionTitle(text = stringResource(R.string.plan_form_section_route))
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = EditionSurface,
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 5.dp,
-                shape = RoundedCornerShape(18.dp),
-                ambientColor = Color.Black.copy(alpha = 0.02f),
-                spotColor = BrandOrange.copy(alpha = 0.05f),
-            ),
-    ) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 13.dp), verticalAlignment = Alignment.CenterVertically) {
-            val ink = BrandOrange
-            Canvas(Modifier.size(17.dp, 75.dp)) {
-                val top = Offset(center.x, 8.dp.toPx())
-                val bottom = Offset(center.x, size.height - 8.dp.toPx())
-                drawLine(ink.copy(alpha = 0.48f), top, bottom, 1.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
-                drawCircle(ink, 4.dp.toPx(), top, style = androidx.compose.ui.graphics.drawscope.Stroke(1.7.dp.toPx()))
-                drawCircle(ink, 5.dp.toPx(), bottom)
-            }
-            Column(Modifier.weight(1f)) {
-                IntegratedCityInputRow(origin, onOriginChange, stringResource(R.string.plan_form_origin_label),
-                    stringResource(R.string.plan_form_origin_hint), false, ImeAction.Next)
-                HorizontalDivider(color = PlanFormDivider, thickness = 1.dp)
-                IntegratedCityInputRow(destination, onDestinationChange, stringResource(R.string.plan_form_destination_label),
-                    stringResource(R.string.plan_form_destination_hint), true, ImeAction.Done)
-            }
-            Surface(onClick = { onDestinationChange(origin); onOriginChange(destination) },
-                enabled = destination.isNotBlank() || origin.isNotBlank(), shape = CircleShape, color = PlanOrangeLightBg,
-                modifier = Modifier.semantics { contentDescription = "互换出发地和目的地" }) {
-                Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) { Text("⇅", color = BrandOrange, fontSize = 21.sp) }
-            }
+    Column(Modifier.fillMaxWidth().background(EditionSurface).border(0.8.dp, PlanFormDivider)
+        .padding(horizontal = 13.dp, vertical = 10.dp)) {
+        Text("行程登机单", color = Ink, fontFamily = FolioSerif, fontSize = 18.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { IntegratedCityInputRow(origin, onOriginChange, "出发地", "从哪里出发", false, ImeAction.Next) }
+            Text("⇄", color = BrandOrange, fontSize = 22.sp, modifier = Modifier.semantics { contentDescription = "互换出发地和目的地" }
+                .clickable(role = Role.Button) { onDestinationChange(origin); onOriginChange(destination) }.padding(7.dp))
+            Box(Modifier.weight(1f)) { IntegratedCityInputRow(destination, onDestinationChange, "目的地", "想去哪里", true, ImeAction.Done) }
+        }
+        HorizontalDivider(color = PlanFormDivider)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1.38f)) { DateInputRow(startDate, onStartDateSelected, onStartDateClear) }
+            TicketNumber("天数", days, "天", 30, onDaysChange, Modifier.weight(1f))
+            TicketNumber("人数", travelers, "人", 20, onTravelersChange, Modifier.weight(1f))
         }
     }
-
-    Spacer(modifier = Modifier.height(20.dp))
-
-    FormSectionTitle(text = stringResource(R.string.plan_form_section_time))
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = EditionSurface,
-        modifier = Modifier.editionRim(RoundedCornerShape(18.dp)).fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-            DateInputRow(
-                value = startDate,
-                onDateSelected = onStartDateSelected,
-                onClear = onStartDateClear,
-            )
-            HorizontalDivider(color = PlanFormDivider, thickness = 1.dp)
-            val dayTitle = stringResource(R.string.plan_form_days_title)
-            val dayUnit = stringResource(R.string.plan_form_days_unit)
-            val travelerTitle = stringResource(R.string.plan_form_travelers_title)
-            val travelerUnit = stringResource(R.string.plan_form_travelers_unit)
-            BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
-                val compact = maxWidth < 294.dp || LocalDensity.current.fontScale > 1.2f
-                if (compact) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TripStepper(dayTitle, days, dayUnit, 30, onDaysChange, Modifier.fillMaxWidth())
-                        TripStepper(travelerTitle, travelers, travelerUnit, 20, onTravelersChange, Modifier.fillMaxWidth())
-                    }
-                } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TripStepper(dayTitle, days, dayUnit, 30, onDaysChange, Modifier.weight(1f))
-                        TripStepper(travelerTitle, travelers, travelerUnit, 20, onTravelersChange, Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-
-    Spacer(modifier = Modifier.height(20.dp))
-
+    Spacer(Modifier.height(17.dp))
     FormSectionTitle(text = stringResource(R.string.plan_form_section_budget))
     Spacer(modifier = Modifier.height(8.dp))
 
@@ -461,8 +294,8 @@ private fun IntegratedCityInputRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp)
-            .padding(horizontal = 16.dp),
+            .heightIn(min = 64.dp)
+            .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -540,21 +373,6 @@ private fun DateInputRow(
             .clickable(role = Role.Button) { showPicker = true },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(PlanTagBg),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.DateRange,
-                contentDescription = null,
-                tint = Muted,
-                modifier = Modifier.size(17.dp),
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.plan_form_date_label),
@@ -564,7 +382,7 @@ private fun DateInputRow(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = value.ifEmpty { stringResource(R.string.plan_form_date_hint) },
+                text = value.ifEmpty { "选择日期" },
                 fontSize = 13.5.sp,
                 fontWeight = if (value.isEmpty()) FontWeight.Normal else FontWeight.SemiBold,
                 color = if (value.isEmpty()) Muted.copy(alpha = 0.55f) else Ink,
@@ -574,11 +392,11 @@ private fun DateInputRow(
         }
         if (value.isNotEmpty()) {
             Text(
-                text = stringResource(R.string.plan_form_clear),
-                fontSize = 12.sp,
+                text = "×",
+                fontSize = 16.sp,
                 color = Muted,
                 modifier = Modifier
-                    .minimumInteractiveComponentSize()
+                    .semantics { contentDescription = "清除日期" }
                     .clickable(role = Role.Button, onClick = onClear)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
             )
@@ -723,48 +541,15 @@ private fun PreferenceChip(label: String, selected: Boolean, onClick: () -> Unit
 }
 
 @Composable
-private fun TripStepper(
-    title: String,
-    value: Int,
-    unit: String,
-    max: Int,
-    onChange: (Int) -> Unit,
-    modifier: Modifier,
-) {
-    Surface(modifier = modifier, shape = RoundedCornerShape(12.dp), color = Color.Transparent) {
-        Column(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(title, fontSize = 12.sp, color = Ink, fontWeight = FontWeight.SemiBold)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
-            ) {
-                TactileStepperButton("−", value > 1) { onChange(value - 1) }
-                Text("$value", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Ink, fontFamily = FontFamily.Monospace)
-                Text(unit, fontSize = 11.sp, color = Muted)
-                TactileStepperButton("+", value < max) { onChange(value + 1) }
-            }
+private fun TicketNumber(label: String, value: Int, unit: String, limit: Int, change: (Int) -> Unit, modifier: Modifier) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Column(Modifier.fillMaxWidth().clickable(role = Role.Button) { open = true }.padding(horizontal = 8.dp, vertical = 6.dp)) {
+            Text(label, color = Muted, fontSize = 11.sp)
+            Text("$value $unit  ⌄", color = Ink, fontFamily = FolioDigits, fontSize = 18.sp)
         }
-    }
-}
-
-@Composable
-private fun TactileStepperButton(symbol: String, enabled: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .clip(CircleShape)
-            .background(if (enabled) PlanOrangeLightBg else PlanTagBg)
-            .minimumInteractiveComponentSize().clickable(enabled = enabled, role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = symbol,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (enabled) BrandOrange else Muted.copy(alpha = 0.4f),
-        )
+        DropdownMenu(open, { open = false }, modifier = Modifier.heightIn(max = 260.dp)) {
+            (1..limit).forEach { n -> DropdownMenuItem(text = { Text("$n $unit") }, onClick = { change(n); open = false }) }
+        }
     }
 }

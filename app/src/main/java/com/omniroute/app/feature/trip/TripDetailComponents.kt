@@ -1,27 +1,17 @@
 package com.omniroute.app.feature.trip
 
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.runtime.remember
+import com.omniroute.app.core.ui.theme.FolioSerif
+import com.omniroute.app.core.ui.theme.FolioDigits
+import androidx.compose.foundation.layout.*
 import com.omniroute.app.core.ui.components.DestinationCover
-import com.omniroute.app.core.ui.theme.editionRim
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.text.font.FontFamily
 import com.omniroute.app.core.network.dto.BudgetSummaryDto
 import com.omniroute.app.core.network.dto.ExecutionSummaryDto
 import androidx.compose.material3.LinearProgressIndicator
 import java.text.NumberFormat
 import java.util.Currency
-import com.omniroute.app.core.ui.components.SeasonArtwork
-import com.omniroute.app.core.ui.theme.EditionSurface
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
 import com.omniroute.app.core.ui.theme.edition
-import com.omniroute.app.core.ui.theme.OmniSeasonLogo
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -31,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,22 +36,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -71,24 +53,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omniroute.app.R
 import com.omniroute.app.core.network.dto.TripPlanDto
-import com.omniroute.app.core.ui.components.CircleIconButton
-import com.omniroute.app.core.ui.components.OmniLogoMark
 import com.omniroute.app.core.ui.theme.LocalAppPalette
 import com.omniroute.app.feature.auth.BrandOrange
 import com.omniroute.app.feature.auth.ErrorBg
@@ -117,114 +91,6 @@ private val VerifiedGreen: Color
 private val VerifiedGreenBg: Color
     @Composable get() = LocalAppPalette.current.verifiedBg
 
-/** 顶部品牌导航栏 */
-@Composable
-internal fun TripTopBar(
-    cityName: String?,
-    actionsEnabled: Boolean,
-    onBack: () -> Unit,
-    onShare: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    val compact = LocalConfiguration.current.screenWidthDp < 450 || LocalDensity.current.fontScale > 1.15f
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-            CircleIconButton(
-                icon = Icons.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.common_back),
-                onClick = onBack,
-                background = CardBg,
-                borderColor = SubtleBorder,
-                tint = Ink,
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column {
-                Text(
-                    text = stringResource(R.string.trip_title),
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink,
-                )
-                Text(
-                    text = if (!cityName.isNullOrBlank()) {
-                        stringResource(R.string.trip_subtitle, cityName)
-                    } else {
-                        stringResource(R.string.trip_subtitle_default)
-                    },
-                    fontSize = 12.sp,
-                    color = Muted,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-
-        if (compact) {
-            var open by remember { mutableStateOf(false) }
-            Box {
-                TopBarAction(Icons.Filled.MoreVert, "更多行程操作", actionsEnabled) { open = true }
-                DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                    listOf(R.string.trip_share to onShare, R.string.trip_rename_desc to onEdit,
-                        R.string.trip_delete_desc to onDelete).forEach { (label, action) ->
-                        DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = { open = false; action() })
-                    }
-                }
-            }
-        } else Row(verticalAlignment = Alignment.CenterVertically) {
-            TopBarAction(
-                icon = Icons.Filled.Share,
-                description = stringResource(R.string.trip_share),
-                enabled = actionsEnabled,
-                onClick = onShare,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            TopBarAction(
-                icon = Icons.Filled.Edit,
-                description = stringResource(R.string.trip_rename_desc),
-                enabled = actionsEnabled,
-                onClick = onEdit,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            TopBarAction(
-                icon = Icons.Filled.Delete,
-                description = stringResource(R.string.trip_delete_desc),
-                enabled = actionsEnabled,
-                onClick = onDelete,
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            OmniLogoMark(size = 30.dp)
-        }
-    }
-}
-
-@Composable
-private fun TopBarAction(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    description: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    CircleIconButton(
-        icon = icon,
-        contentDescription = description,
-        onClick = onClick,
-        enabled = enabled,
-        visualSize = 34.dp,
-        iconSize = 16.dp,
-        background = CardBg,
-        borderColor = SubtleBorder,
-        tint = if (enabled) Ink else Muted.copy(alpha = 0.45f),
-    )
-}
-
 /** 详情页头部：主看板 + 日程概览标题；日程本体交给 LazyColumn 逐项组合。 */
 @Composable
 internal fun TripDetailHeader(
@@ -239,10 +105,7 @@ internal fun TripDetailHeader(
     onOpenBudget: () -> Unit,
 ) {
     // 1. 路书主看板卡片
-    EditorialHeroCard(
-        trip = trip,
-        summary = summary,
-    )
+    SummaryNote(trip, summary)
 
     // 2. 空日程校验与提示
     if (!hasContent) {
@@ -352,32 +215,18 @@ private fun TripToolTile(
     val palette = LocalAppPalette.current
     val style = LocalJourneySeason.current.edition
     val journey = title == R.string.journey_open
-    val tint = if (journey) style.glow else style.secondary
-    val shape = RoundedCornerShape(18.dp)
-    Surface(onClick = onClick, modifier = modifier.editionRim(shape), shape = shape, color = EditionSurface) {
-        Column(Modifier.background(Brush.linearGradient(listOf(tint.copy(alpha = 0.26f), Color.Transparent)))
-            .padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, null, tint = palette.brand, modifier = Modifier.size(20.dp))
-                val fraction = progress?.takeIf(Float::isFinite)?.coerceIn(0f, 1f)
-                if (journey && fraction != null) {
-                    Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxSize(),
-                            strokeWidth = 3.dp, color = palette.brand, trackColor = palette.brandTint)
-                        Text("${(fraction * 100).toInt()}%", fontSize = 9.sp, color = palette.brand)
-                    }
-                } else {
-                    Icon(Icons.Filled.ArrowForward, null, tint = palette.muted, modifier = Modifier.size(15.dp))
-                }
-            }
-            Text(stringResource(title), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-            Text(subtitle, fontSize = 12.sp, lineHeight = 17.sp, color = Muted)
-            if (!journey) {
-                LinearProgressIndicator(progress = { progress?.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f },
-                    modifier = Modifier.fillMaxWidth().padding(top = 3.dp).height(6.dp).clip(CircleShape),
-                    color = palette.brand, trackColor = palette.ink.copy(alpha = 0.09f))
-            }
+    Row(modifier.heightIn(min = 68.dp).clickable(role = Role.Button, onClick = onClick)
+        .padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        val fraction = progress?.takeIf(Float::isFinite)?.coerceIn(0f, 1f)
+        Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) {
+            if (journey && fraction != null) CircularProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxSize(),
+                strokeWidth = 2.dp, color = palette.brand, trackColor = palette.divider)
+            Icon(icon, null, tint = palette.brand, modifier = Modifier.size(17.dp))
+        }
+        Column(Modifier.padding(start = 9.dp)) {
+            Text(stringResource(title), fontFamily = FolioSerif, fontSize = 16.sp, color = Ink)
+            Text(subtitle, fontSize = 12.sp, color = Muted, lineHeight = 17.sp)
+            if (!journey && fraction != null) LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(2.dp))
         }
     }
 }
@@ -390,36 +239,34 @@ private fun ticketMoney(cents: Long, code: String?): String {
 }
 
 @Composable
-private fun EditorialHeroCard(trip: TripPlanDto, summary: String?) {
+internal fun GuideCover(trip: TripPlanDto, toolbar: @Composable () -> Unit) {
     val context = LocalContext.current
-    val style = LocalJourneySeason.current.edition
-    var showSummary by rememberSaveable(trip.id) { mutableStateOf(false) }
-
-    val shape = RoundedCornerShape(24.dp)
-    DestinationCover(trip.destCity, trip.content.orEmpty().contains("天池"), Modifier.fillMaxWidth().editionRim(shape).clip(shape)) {
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(
-            0f to Color.Transparent, 0.30f to Color.Transparent, 0.75f to Color(0x75151D29), 1f to Color(0xD4181D2B))))
-        Column(Modifier.fillMaxWidth().heightIn(min = 210.dp).padding(18.dp), verticalArrangement = Arrangement.Bottom) {
-            Text(tripTitle(context, trip), color = Color.White, fontSize = 27.sp, lineHeight = 34.sp,
-                fontFamily = style.titleFont, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                val date = trip.createdAt?.take(10).orEmpty()
-                val tags = listOfNotNull(
-                    if (trip.days > 0) stringResource(R.string.trip_meta_days_value, trip.days) else null,
-                    if (trip.travelers > 0) stringResource(R.string.trip_meta_travelers_value, trip.travelers) else null,
-                    if (date.length == 10) "${date.replace('-', '.')} 归档" else null)
-                tags.forEach { Text(it, color = Color.White, fontSize = 11.sp, modifier = Modifier.clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.19f)).padding(horizontal = 9.dp, vertical = 4.dp)) }
-            }
+    DestinationCover(trip.destCity, trip.content.orEmpty().contains("天池"), Modifier.fillMaxWidth(),
+        creditAlignment = Alignment.BottomEnd) {
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x420B1116), 0.34f to Color.Transparent,
+            0.73f to Color(0x52121B20), 1f to Color(0xD8111C21))))
+        Column(Modifier.fillMaxWidth().heightIn(min = 275.dp).padding(start = 22.dp, end = 44.dp, bottom = 19.dp, top = 85.dp),
+            verticalArrangement = Arrangement.Bottom) {
+            Text("OMNIROUTE   /   TRAVEL GUIDE", color = Color.White, fontFamily = FolioDigits, fontSize = 13.sp, letterSpacing = 2.sp)
+            Text(tripTitle(context, trip), color = Color.White, fontSize = 32.sp, lineHeight = 43.sp, fontFamily = FolioSerif)
+            val meta = listOfNotNull(trip.days.takeIf { it > 0 }?.let { "$it DAYS" },
+                trip.travelers.takeIf { it > 0 }?.let { "$it GUESTS" },
+                trip.createdAt?.take(10)?.takeIf { it.length == 10 }?.let { "归档  ${it.replace('-', '.')}" })
+            Text(meta.joinToString("   ·   "), color = Color.White, fontFamily = FolioDigits, fontSize = 14.sp, letterSpacing = 0.8.sp)
         }
+        toolbar()
     }
+}
+
+@Composable
+private fun SummaryNote(trip: TripPlanDto, summary: String?) {
+    var showSummary by rememberSaveable(trip.id) { mutableStateOf(false) }
     if (!summary.isNullOrBlank()) {
         Spacer(Modifier.height(10.dp))
-        val note = RoundedCornerShape(16.dp)
-        Surface(onClick = { showSummary = !showSummary }, modifier = Modifier.fillMaxWidth().editionRim(note),
-            shape = note, color = EditionSurface) {
-            Column(Modifier.padding(horizontal = 15.dp, vertical = 11.dp)) {
+        val note = RoundedCornerShape(0.dp)
+        Surface(onClick = { showSummary = !showSummary }, modifier = Modifier.fillMaxWidth(),
+            shape = note, color = Color.Transparent) {
+            Column(Modifier.padding(vertical = 4.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("路书导语", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     Text(if (showSummary) "收起  −" else "展开  +", color = BrandOrange, fontSize = 12.sp)
