@@ -411,7 +411,7 @@ private fun FilterTab(text: String, selected: Boolean, onClick: () -> Unit) {
                 text = text,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = if (selected) Color.White else Muted,
+                color = if (selected) LocalAppPalette.current.onBrand else Muted,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
             )
         }

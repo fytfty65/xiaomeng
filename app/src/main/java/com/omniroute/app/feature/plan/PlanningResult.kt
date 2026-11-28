@@ -1,5 +1,7 @@
 package com.omniroute.app.feature.plan
 
+import com.omniroute.app.core.ui.theme.LocalAppPalette
+
 import androidx.compose.material3.minimumInteractiveComponentSize
 
 import android.graphics.Bitmap
@@ -337,7 +339,7 @@ private fun DayChip(text: String, selected: Boolean, onClick: () -> Unit) {
             text = text,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            color = if (selected) Color.White else Muted,
+            color = if (selected) LocalAppPalette.current.onBrand else Muted,
             modifier = Modifier.padding(horizontal = 11.dp, vertical = 5.dp),
         )
     }
