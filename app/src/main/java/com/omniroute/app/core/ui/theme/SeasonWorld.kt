@@ -55,7 +55,7 @@ private data class WorldFrame(val origin: Offset, val size: IntSize, val frost: 
 private val LocalFrame = compositionLocalOf<WorldFrame?> { null }
 
 @Composable
-internal fun SeasonWorldBackdrop(season: JourneySeason, content: @Composable () -> Unit) {
+internal fun SeasonWorldBackdrop(season: JourneySeason, scenery: (@Composable () -> Unit)? = null, content: @Composable () -> Unit) {
     val style = season.world
     var distance by remember(season) { mutableFloatStateOf(0f) }
     val range = with(androidx.compose.ui.platform.LocalDensity.current) { 180.dp.toPx() }
@@ -67,18 +67,18 @@ internal fun SeasonWorldBackdrop(season: JourneySeason, content: @Composable () 
     } }
     var origin by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(IntSize.Zero) }
-    val frost = ImageBitmap.imageResource(style.frost)
+    val frost = ImageBitmap.imageResource(if (scenery == null) style.frost else season.portalArt.frost)
     val frame = remember(origin, bounds, frost, range) { WorldFrame(origin, bounds, frost) { distance / range } }
     Box(Modifier.fillMaxSize().clip(androidx.compose.ui.graphics.RectangleShape).background(style.shadow).nestedScroll(scroll)
         .onGloballyPositioned { origin = it.positionInWindow(); bounds = it.size }) {
-        SeasonWorldImage(season, Modifier.matchParentSize().graphicsLayer {
+        if (scenery != null) scenery() else SeasonWorldImage(season, Modifier.matchParentSize().graphicsLayer {
             scaleX = 1.035f
             scaleY = 1.035f
             translationY = -size.height * .014f * frame.pan()
         })
         Spacer(Modifier.matchParentSize().drawBehind {
             val extra = distance / range * 0.13f
-            drawRect(Brush.verticalGradient(0f to style.shadow.copy(alpha = .55f + extra),
+            drawRect(Brush.verticalGradient(0f to style.shadow.copy(alpha = (if (scenery != null && season == JourneySeason.Spring) .035f else .55f) + extra),
                 .22f to style.shadow.copy(alpha = .23f + extra), .52f to style.shadow.copy(alpha = .72f + extra),
                 1f to style.shadow.copy(alpha = .85f + extra)))
         })

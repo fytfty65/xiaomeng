@@ -81,16 +81,17 @@ private val editionStyles = JourneySeason.entries.associateWith { season ->
 internal val JourneySeason.edition: SeasonEdition get() = editionStyles.getValue(this)
 
 @Composable
-internal fun SeasonEditionTheme(season: JourneySeason, content: @Composable () -> Unit) {
+internal fun SeasonEditionTheme(season: JourneySeason, scenery: (@Composable () -> Unit)? = null, content: @Composable () -> Unit) {
     val world = season.world
+    val paper = if (scenery == null) world.light else androidx.compose.animation.animateColorAsState(world.light, androidx.compose.animation.core.tween(550), label = "portal paper").value
     val tile = androidx.compose.ui.graphics.lerp(world.shadow, Color.White, 0.105f)
     val palette = DarkAppPalette.copy(
-        brand = world.light, brandDark = world.light, brandLight = world.accent, onBrand = world.onLight,
+        brand = paper, brandDark = paper, brandLight = world.accent, onBrand = world.onLight,
         ink = world.ink, muted = world.secondary, background = world.shadow, surface = world.glass,
         fieldBg = tile, tabTrack = tile, border = world.secondary.copy(alpha = .32f),
         divider = world.secondary.copy(alpha = .20f), tagBg = tile, brandTint = tile,
     )
-    com.omniroute.app.core.ui.SystemBarIcons(false, false)
+    com.omniroute.app.core.ui.SystemBarIcons(scenery != null && season == JourneySeason.Spring, false)
     CompositionLocalProvider(LocalJourneySeason provides season, LocalAppPalette provides palette) {
         MaterialTheme(
             colorScheme = androidx.compose.material3.darkColorScheme(
@@ -106,7 +107,7 @@ internal fun SeasonEditionTheme(season: JourneySeason, content: @Composable () -
                 outline = palette.border,
             ),
         ) {
-            SeasonWorldBackdrop(season) {
+            SeasonWorldBackdrop(season, scenery) {
               Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                 Box(Modifier.widthIn(max = ContentMaxWidth).fillMaxSize()) { content() }
               }

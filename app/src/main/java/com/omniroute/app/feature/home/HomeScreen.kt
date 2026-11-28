@@ -1,7 +1,16 @@
 package com.omniroute.app.feature.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
+import android.animation.ValueAnimator
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.platform.LocalDensity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
+import com.omniroute.app.feature.auth.PortalScenery
+import com.omniroute.app.feature.auth.stepBy
+import com.omniroute.app.core.ui.theme.SeasonEditionTheme
+import kotlinx.coroutines.delay
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +29,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -43,7 +51,6 @@ import com.omniroute.app.AppContainer
 import com.omniroute.app.R
 import com.omniroute.app.core.network.dto.UserDto
 import com.omniroute.app.core.ui.ContentMaxWidth
-import com.omniroute.app.core.ui.SystemBarIcons
 import com.omniroute.app.core.ui.theme.JourneySeason
 import com.omniroute.app.core.ui.theme.LocalAppPalette
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
@@ -74,13 +81,31 @@ fun HomeScreen(
         },
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val palette = LocalAppPalette.current
-    val season = LocalJourneySeason.current
+    val preference = LocalJourneySeason.current
+    var season by rememberSaveable(preference) { mutableStateOf(preference) }
+    var playing by rememberSaveable { mutableStateOf(true) }
     val listState = rememberLazyListState()
     var accountOpen by rememberSaveable { mutableStateOf(false) }
     val tripsError = state.tripsError
 
-    SystemBarIcons(darkIcons = !isSystemInDarkTheme())
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val moving = lifecycle == Lifecycle.State.RESUMED && ValueAnimator.areAnimatorsEnabled()
+    val keyboard = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    LaunchedEffect(season, playing, moving, keyboard, accountOpen, listState.isScrollInProgress) {
+        if (playing && moving && !keyboard && !accountOpen && !listState.isScrollInProgress && listState.firstVisibleItemIndex < 2) {
+            delay(8000)
+            season = season.stepBy(1)
+        }
+    }
+    fun choose(choice: JourneySeason) {
+        playing = false
+        season = choice
+        onSeasonChange(choice)
+    }
+    fun enter(action: () -> Unit) {
+        onSeasonChange(season)
+        action()
+    }
 
     LaunchedEffect(refreshTick) { viewModel.onRefreshTick(refreshTick) }
     LaunchedEffect(viewModel) { viewModel.events.collect { onLoggedOut() } }
@@ -95,117 +120,114 @@ fun HomeScreen(
         },
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .imePadding(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center,
+    SeasonEditionTheme(season, scenery = { PortalScenery(season, moving) }) {
+        val palette = LocalAppPalette.current
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .imePadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            TopBrandBar(
-                user = state.user,
-                loading = state.loadingProfile,
-                onClick = { accountOpen = true },
-                modifier = Modifier.widthIn(max = ContentMaxWidth).padding(horizontal = 18.dp),
-            )
-            if (listState.canScrollBackward) {
-                HorizontalDivider(
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    color = palette.divider,
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                TopBrandBar(
+                    user = state.user,
+                    loading = state.loadingProfile,
+                    onClick = { accountOpen = true },
+                    modifier = Modifier.widthIn(max = ContentMaxWidth).padding(horizontal = 18.dp),
                 )
             }
-        }
 
-        PullToRefreshBox(
-            isRefreshing = state.refreshing,
-            onRefresh = viewModel::refresh,
-            modifier = Modifier.widthIn(max = ContentMaxWidth).fillMaxSize(),
-        ) {
-            LazyColumn(
-                state = listState,
-                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize().wheelScroll(listState),
+            PullToRefreshBox(
+                isRefreshing = state.refreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.widthIn(max = ContentMaxWidth).fillMaxSize(),
             ) {
-                item(key = "welcome") { WelcomeHeadline(greeting, season) }
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize().wheelScroll(listState),
+                ) {
+                    item(key = "welcome") { WelcomeHeadline(listOfNotNull(greeting, state.user?.displayName?.takeIf { it.isNotBlank() }).joinToString("，")) }
 
-                state.profileError?.let { error ->
-                    item(key = "profile_error") {
-                        Column {
-                            InlineBanner(
-                                text = error,
-                                bg = palette.errorBg,
-                                fg = palette.errorFg,
-                                icon = Icons.Filled.Warning,
-                            )
-                            TextButton(onClick = viewModel::loadProfile) {
-                                Text(stringResource(R.string.home_reload_profile))
+                    state.profileError?.let { error ->
+                        item(key = "profile_error") {
+                            Column {
+                                InlineBanner(
+                                    text = error,
+                                    bg = palette.errorBg,
+                                    fg = palette.errorFg,
+                                    icon = Icons.Filled.Warning,
+                                )
+                                TextButton(onClick = viewModel::loadProfile) {
+                                    Text(stringResource(R.string.home_reload_profile))
+                                }
                             }
                         }
                     }
-                }
 
-                item(key = "planner") {
-                    RoutePlannerHeroCard(
-                        season = season,
-                        onSeasonChange = onSeasonChange,
-                        onOpenSeason = onOpenSeason,
-                        onQuickPlan = onQuickPlan,
-                        onOpenPlanner = onStartPlanning,
-                    )
-                }
-
-                item(key = "quick_entries") {
-                    QuickEntriesRow(
-                        alerts = state.alerts,
-                        alertsUnavailable = state.alertsUnavailable,
-                        onOpenRoom = onOpenRoom,
-                        onOpenNotifications = onOpenNotifications,
-                    )
-                }
-
-                item(key = "trips_header") {
-                    ModernSectionHeader(
-                        title = stringResource(R.string.home_my_trips),
-                        count = state.trips.size.takeIf { !state.loadingTrips && tripsError == null },
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
-
-                when {
-                    state.loadingTrips && state.trips.isEmpty() ->
-                        item(key = "trips_loading") { TripsLoadingCard() }
-                    tripsError != null -> item(key = "trips_error") {
-                        TripsErrorCard(errorText = tripsError, onRetry = viewModel::loadTrips)
+                    item(key = "planner") {
+                        RoutePlannerHeroCard(
+                            season = season,
+                            onSeasonChange = ::choose,
+                            onOpenSeason = { enter(onOpenSeason) },
+                            onQuickPlan = { city, days -> enter { onQuickPlan(city, days) } },
+                            onOpenPlanner = { enter(onStartPlanning) },
+                            onInteract = { playing = false },
+                        )
                     }
-                    state.trips.isEmpty() -> item(key = "trips_empty") {
-                        ModernEmptyTripsCard(onStartPlanning = onStartPlanning)
-                    }
-                }
 
-                items(state.trips, key = { it.id ?: it.hashCode() }) { trip ->
-                    ModernTripCard(trip = trip, onClick = { onOpenTrip(trip.id.orEmpty()) })
+                    item(key = "quick_entries") {
+                        QuickEntriesRow(
+                            alerts = state.alerts,
+                            alertsUnavailable = state.alertsUnavailable,
+                            onOpenRoom = { enter(onOpenRoom) },
+                            onOpenNotifications = { enter(onOpenNotifications) },
+                        )
+                    }
+
+                    item(key = "trips_header") {
+                        ModernSectionHeader(
+                            title = stringResource(R.string.home_my_trips),
+                            count = state.trips.size.takeIf { !state.loadingTrips && tripsError == null },
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+
+                    when {
+                        state.loadingTrips && state.trips.isEmpty() ->
+                            item(key = "trips_loading") { TripsLoadingCard() }
+                        tripsError != null -> item(key = "trips_error") {
+                            TripsErrorCard(errorText = tripsError, onRetry = viewModel::loadTrips)
+                        }
+                        state.trips.isEmpty() -> item(key = "trips_empty") {
+                            ModernEmptyTripsCard(onStartPlanning = { enter(onStartPlanning) })
+                        }
+                    }
+
+                    items(state.trips, key = { it.id ?: it.hashCode() }) { trip ->
+                        ModernTripCard(trip = trip, onClick = { enter { onOpenTrip(trip.id.orEmpty()) } })
+                    }
                 }
             }
         }
-    }
 
-    if (accountOpen) {
-        HomeAccountDrawer(
-            state = state,
-            season = season,
-            onDismiss = { accountOpen = false },
-            onSeasonChange = onSeasonChange,
-            onOpenProfile = {
-                accountOpen = false
-                onOpenProfile()
-            },
-            onLogout = viewModel::logout,
-        )
+        if (accountOpen) {
+            HomeAccountDrawer(
+                state = state,
+                season = season,
+                onDismiss = { accountOpen = false },
+                onSeasonChange = ::choose,
+                onOpenProfile = {
+                    accountOpen = false
+                    enter(onOpenProfile)
+                },
+                onLogout = viewModel::logout,
+            )
+        }
     }
 }

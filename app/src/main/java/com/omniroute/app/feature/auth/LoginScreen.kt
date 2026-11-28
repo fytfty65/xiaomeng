@@ -11,7 +11,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import com.omniroute.app.R
 import com.omniroute.app.core.network.dto.UserDto
-import com.omniroute.app.core.ui.SystemBarIcons
 import com.omniroute.app.core.ui.theme.JourneySeason
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -113,13 +112,12 @@ fun LoginScreen(
         }
     }
 
-    SystemBarIcons(darkIcons = ticketSeason != null && selected != JourneySeason.Winter)
     LoginLanding(
         season = selected,
         ticketOpen = ticketSeason != null,
-        onSeasonChange = onSeasonChange,
-        onOpen = { creating ->
-            ticketSeason = season
+        onOpen = { creating, choice ->
+            onSeasonChange(choice)
+            ticketSeason = choice
             register = creating
             failedAttempt = 0
             error = null

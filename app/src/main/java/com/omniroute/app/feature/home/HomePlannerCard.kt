@@ -1,5 +1,17 @@
 package com.omniroute.app.feature.home
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.omniroute.app.core.ui.theme.portalArt
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.FolioSerif
+import androidx.compose.foundation.border
+import androidx.compose.animation.*
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -42,7 +54,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.focus.onFocusChanged
@@ -62,7 +73,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -73,11 +83,8 @@ import androidx.compose.ui.unit.sp
 import com.omniroute.app.R
 import com.omniroute.app.core.ui.theme.JourneySeason
 import com.omniroute.app.core.ui.theme.LocalAppPalette
-import com.omniroute.app.feature.auth.SeasonHeroImage
-import com.omniroute.app.feature.auth.heroSeason
 import kotlin.math.abs
 
-private val SeasonTitleFont = FontFamily(Font(R.font.omni_serif_medium, FontWeight.Medium))
 private val HeroInk = Color(0xFF111D20)
 private val RouteSteps = listOf(R.string.home_intent, R.string.home_gaming, R.string.home_route)
 
@@ -88,17 +95,12 @@ internal fun RoutePlannerHeroCard(
     onOpenSeason: () -> Unit,
     onQuickPlan: (String, Int) -> Unit,
     onOpenPlanner: () -> Unit,
+    onInteract: () -> Unit,
 ) {
-    val palette = LocalAppPalette.current
-    Surface(
-        shape = RoundedCornerShape(21.dp),
-        color = palette.surface,
-        border = BorderStroke(1.dp, palette.border),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column {
-            SeasonalHero(season, onSeasonChange, onOpenSeason)
-            QuickPlanForm(season, onQuickPlan, onOpenPlanner)
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        SeasonalHero(season, onSeasonChange, onOpenSeason, onInteract)
+        Box(Modifier.fillMaxWidth().spatialIsland(24.dp)) {
+            QuickPlanForm(season, onQuickPlan, onOpenPlanner, onInteract)
         }
     }
 }
@@ -108,16 +110,17 @@ private fun SeasonalHero(
     season: JourneySeason,
     onSeasonChange: (JourneySeason) -> Unit,
     onOpenSeason: () -> Unit,
+    onInteract: () -> Unit,
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clipToBounds()
+            .clip(RoundedCornerShape(20.dp)).border(.8.dp, Color.White.copy(alpha = .28f), RoundedCornerShape(20.dp))
             .background(HeroInk)
-            .pointerInput(season, onSeasonChange) {
+            .pointerInput(season) {
                 var drag = 0f
                 detectHorizontalDragGestures(
-                    onDragStart = { drag = 0f },
+                    onDragStart = { onInteract(); drag = 0f },
                     onDragCancel = { drag = 0f },
                     onHorizontalDrag = { _, amount -> drag += amount },
                     onDragEnd = {
@@ -130,8 +133,10 @@ private fun SeasonalHero(
                 )
             },
     ) {
-        Box(modifier = Modifier.matchParentSize()) {
-            SeasonHeroImage(season = season.heroSeason())
+        AnimatedContent(season, modifier = Modifier.matchParentSize(), transitionSpec = {
+            (fadeIn(tween(450)) + scaleIn(tween(450), initialScale = 1.03f)) togetherWith fadeOut(tween(450))
+        }, label = "seasonal cabin") { target ->
+            Image(painterResource(target.portalArt.window), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         }
         Box(
             modifier = Modifier.matchParentSize().drawBehind {
@@ -160,7 +165,7 @@ private fun SeasonalHero(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                EditionMenu(season, onSeasonChange)
+                EditionMenu(season, onSeasonChange, onInteract)
                 Surface(
                     onClick = onOpenSeason,
                     shape = CircleShape,
@@ -177,24 +182,16 @@ private fun SeasonalHero(
                     }
                 }
             }
-            Spacer(Modifier.height(14.dp))
-            Text(
-                stringResource(season.titleRes),
-                color = Color.White,
-                fontSize = 31.sp,
-                lineHeight = 37.sp,
-                fontFamily = SeasonTitleFont,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 1.2.sp,
-            )
-            Spacer(Modifier.height(3.dp))
-            Text(
-                stringResource(season.phraseRes),
-                color = Color.White.copy(alpha = 0.94f),
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-            )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(8.dp))
+            AnimatedContent(season, transitionSpec = {
+                (fadeIn(tween(320, 100)) + slideInVertically { it / 7 }) togetherWith fadeOut(tween(150))
+            }, label = "window caption") { page ->
+                Column {
+                    Text(stringResource(page.titleRes), fontFamily = FolioSerif, color = Color.White, fontSize = 24.sp, lineHeight = 30.sp)
+                    Text(stringResource(page.phraseRes), color = Color.White.copy(alpha = .93f), fontSize = 12.sp)
+                }
+            }
+            Spacer(Modifier.height(9.dp))
             HeroPath()
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -216,13 +213,13 @@ private fun SeasonalHero(
 }
 
 @Composable
-private fun EditionMenu(season: JourneySeason, onSeasonChange: (JourneySeason) -> Unit) {
+private fun EditionMenu(season: JourneySeason, onSeasonChange: (JourneySeason) -> Unit, onInteract: () -> Unit) {
     var open by remember { mutableStateOf(false) }
     val palette = LocalAppPalette.current
     val switchLabel = stringResource(R.string.home_switch_season)
     Box {
         Surface(
-            onClick = { open = true },
+            onClick = { onInteract(); open = true },
             shape = CircleShape,
             color = HeroInk.copy(alpha = 0.42f),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.24f)),
@@ -275,7 +272,7 @@ private fun HeroPath() {
         label = "hero_route_phase",
     )
     Spacer(
-        Modifier.fillMaxWidth().height(22.dp).drawWithCache {
+        Modifier.fillMaxWidth().height(12.dp).drawWithCache {
             // 与下方三个等宽文字列共用中心坐标。
             val first = Offset(size.width / 6f, size.height * 0.62f)
             val second = Offset(size.width / 2f, size.height * 0.22f)
@@ -312,6 +309,7 @@ private fun QuickPlanForm(
     season: JourneySeason,
     onQuickPlan: (String, Int) -> Unit,
     onOpenPlanner: () -> Unit,
+    onInteract: () -> Unit,
 ) {
     val palette = LocalAppPalette.current
     var query by rememberSaveable { mutableStateOf("") }
@@ -356,15 +354,8 @@ private fun QuickPlanForm(
                 Text(stringResource(R.string.home_planner_full), fontSize = 12.sp)
             }
         }
-        Text(
-            stringResource(R.string.home_new_trip_sub),
-            color = palette.muted,
-            fontSize = 12.sp,
-            lineHeight = 17.sp,
-        )
-        Spacer(Modifier.height(10.dp))
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             color = palette.fieldBg,
             border = BorderStroke(
                 1.dp,
@@ -388,7 +379,7 @@ private fun QuickPlanForm(
                             error = false
                         }
                     },
-                    modifier = Modifier.weight(1f).onFocusChanged { focused = it.isFocused }
+                    modifier = Modifier.weight(1f).onFocusChanged { focused = it.isFocused; if (it.isFocused) onInteract() }
                         .semantics { contentDescription = fieldLabel },
                     textStyle = TextStyle(color = palette.ink, fontSize = 14.sp),
                     cursorBrush = SolidColor(palette.brand),
@@ -415,7 +406,7 @@ private fun QuickPlanForm(
                 )
                 Surface(
                     onClick = { submit() },
-                    shape = RoundedCornerShape(9.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = palette.brand,
                     contentColor = palette.onBrand,
                 ) {

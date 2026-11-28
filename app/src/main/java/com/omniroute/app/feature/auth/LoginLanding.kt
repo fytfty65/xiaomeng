@@ -1,5 +1,16 @@
 package com.omniroute.app.feature.auth
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextDecoration
+import com.omniroute.app.core.ui.theme.*
+
 import android.animation.ValueAnimator
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
@@ -10,7 +21,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -46,182 +56,164 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import com.omniroute.app.R
-import com.omniroute.app.core.ui.components.OmniLogoMark
 import com.omniroute.app.core.ui.theme.JourneySeason
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.random.Random
 
-private val CoverIvory = Color(0xFFFFFBF1)
-private val CoverShade = Brush.verticalGradient(
-    0f to Color(0xAB183440),
-    .28f to Color.Transparent,
-    .52f to Color.Transparent,
-    1f to Color(0xF0152A28),
-)
+private val chapters = listOf("觅花", "逐浪", "拾叶", "寻雪")
+private val poems = listOf("山岚初醒，赴一场花信之约", "海风有信，把盛夏装进行囊", "层林微醺，在旷野收藏金秋", "雪落无声，向远方暖灯出发")
+
+internal fun JourneySeason.stepBy(step: Int) = JourneySeason.entries[(ordinal + step + 4) % 4]
 
 @Composable
-internal fun LoginLanding(
-    season: JourneySeason,
-    ticketOpen: Boolean,
-    onSeasonChange: (JourneySeason) -> Unit,
-    onOpen: (register: Boolean) -> Unit,
-    ticket: @Composable BoxScope.() -> Unit,
-) {
-    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
-    val motion = ValueAnimator.areAnimatorsEnabled()
-    val active = lifecycle == Lifecycle.State.RESUMED && motion && !ticketOpen
-    var autoPlay by rememberSaveable { mutableStateOf(true) }
-    val selectSeason by rememberUpdatedState(onSeasonChange)
-
-    LaunchedEffect(season, active, autoPlay) {
-        if (active && autoPlay) {
-            delay(9_000L)
-            selectSeason(JourneySeason.entries[(season.ordinal + 1) % JourneySeason.entries.size])
+internal fun PortalScenery(season: JourneySeason, moving: Boolean) {
+    val tilt = rememberFoilTilt(moving)
+    Crossfade(season, animationSpec = tween(550), label = "landscape") { target ->
+        val pan = remember(target) { Animatable(if (moving) 1f else 0f) }
+        LaunchedEffect(target, moving) { pan.animateTo(0f, tween(if (moving) 550 else 0)) }
+        val zoom = remember(target) { Animatable(if (moving) 1.06f else 1f) }
+        LaunchedEffect(target, moving) {
+            if (moving) zoom.animateTo(1.035f, tween(8000, easing = LinearEasing))
         }
-    }
-
-    Box(Modifier.fillMaxSize().background(Color(0xFF20343A)).clipToBounds()) {
-        Box(
-            Modifier
-                .matchParentSize()
-                .graphicsLayer {
-                    if (ticketOpen) {
-                        scaleX = 1.025f
-                        scaleY = 1.025f
-                    }
-                }
-                .blur(if (!ticketOpen) 0.dp else if (season == JourneySeason.Summer) 6.dp else 4.dp),
-        ) {
-            Crossfade(
-                targetState = if (ticketOpen) season.passStyle().ticketBackground else season.passStyle().cover,
-                animationSpec = tween(if (!motion) 0 else if (ticketOpen) 420 else 1000),
-                label = "season-art",
-            ) { artwork ->
-                Image(
-                    painterResource(artwork),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            if (active) CoverWeather(season)
-        }
-        if (ticketOpen) {
-            ticket()
-        } else {
-            Box(Modifier.matchParentSize().background(CoverShade))
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(horizontal = 18.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                CoverHeader(
-                    season = season,
-                    autoPlay = autoPlay,
-                    motion = motion,
-                    onSeason = { autoPlay = false; onSeasonChange(it) },
-                    onToggle = { autoPlay = !autoPlay },
-                )
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(bottom = 12.dp)) {
-                    Text(
-                        stringResource(R.string.auth_hero_title),
-                        fontFamily = FontFamily.Serif,
-                        color = CoverIvory,
-                        fontSize = 29.sp,
-                        lineHeight = 45.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(22.dp))
-                    Button(
-                        onClick = { onOpen(true) },
-                        modifier = Modifier.widthIn(min = 205.dp).heightIn(min = 52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = CoverIvory,
-                            contentColor = Color(0xFF21382D),
-                        ),
-                    ) {
-                        Text(stringResource(R.string.pass_begin), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                    TextButton(onClick = { onOpen(false) }) {
-                        Text(stringResource(R.string.pass_returning), color = CoverIvory)
-                    }
-                }
-            }
+        Box(Modifier.fillMaxSize().clipToBounds()) {
+            Image(painterResource(target.portalArt.landscape), null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize().graphicsLayer {
+                scaleX = zoom.value
+                scaleY = zoom.value
+                val overscan = size.width * (zoom.value - 1f) * .5f
+                translationX = if (moving) (tilt.value * 6.dp.toPx() + pan.value * 18.dp.toPx()).coerceIn(-overscan, overscan) else 0f
+            })
+            if (moving) CoverWeather(target)
         }
     }
 }
 
 @Composable
-private fun CoverHeader(
+internal fun LoginLanding(
     season: JourneySeason,
-    autoPlay: Boolean,
-    motion: Boolean,
-    onSeason: (JourneySeason) -> Unit,
-    onToggle: () -> Unit,
+    ticketOpen: Boolean,
+    onOpen: (Boolean, JourneySeason) -> Unit,
+    ticket: @Composable BoxScope.() -> Unit,
 ) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        OmniLogoMark(size = 29.dp)
-        Spacer(Modifier.width(6.dp))
-        Text(
-            stringResource(R.string.app_name),
-            modifier = Modifier.weight(1f),
-            color = CoverIvory,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-        )
-        Row(
-            modifier = Modifier.clip(CircleShape).background(Color(0x54324D53)).selectableGroup(),
-        ) {
-            JourneySeason.entries.forEach { choice ->
-                val chosen = season == choice
-                Box(
-                    Modifier
-                        .width(32.dp)
-                        .height(44.dp)
-                        .selectable(chosen, role = Role.Tab) { onSeason(choice) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        Modifier.size(28.dp).background(if (chosen) CoverIvory else Color.Transparent, CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            stringResource(choice.labelRes),
-                            color = if (chosen) Color(0xFF21382D) else CoverIvory,
-                            fontSize = 13.sp,
-                        )
-                    }
-                }
-            }
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val motion = ValueAnimator.areAnimatorsEnabled()
+    var preview by rememberSaveable(season) { mutableStateOf(season) }
+    var playing by rememberSaveable { mutableStateOf(true) }
+    var opening by remember { mutableStateOf<Boolean?>(null) }
+    val active = lifecycle == Lifecycle.State.RESUMED && motion && !ticketOpen && opening == null
+    val cycle = remember(preview) { Animatable(0f) }
+    LaunchedEffect(active, playing, preview) {
+        if (active && playing) {
+            cycle.animateTo(1f, tween(((1f - cycle.value) * 8000).toInt(), easing = LinearEasing))
+            preview = preview.stepBy(1)
         }
-        if (motion) {
-            val description = stringResource(if (autoPlay) R.string.auth_pause_seasons else R.string.auth_play_seasons)
-            IconButton(
-                onClick = onToggle,
-                modifier = Modifier.size(44.dp).semantics { contentDescription = description },
-            ) {
-                if (autoPlay) {
-                    Canvas(Modifier.size(11.dp)) {
-                        val width = 2.dp.toPx()
-                        drawRect(CoverIvory, size = Size(width, size.height))
-                        drawRect(CoverIvory, topLeft = Offset(size.width - width, 0f), size = Size(width, size.height))
+    }
+    LaunchedEffect(opening) {
+        opening?.let { register ->
+            if (motion) delay(260)
+            onOpen(register, preview)
+            opening = null
+        }
+    }
+    val selected = if (ticketOpen) season else preview
+    val choose: (JourneySeason) -> Unit = { playing = false; preview = it }
+    val light by animateColorAsState(selected.world.light, tween(550), label = "paper")
+    val glass by animateColorAsState(selected.world.glass, tween(550), label = "glass")
+    val skyInk = if (selected == JourneySeason.Spring) selected.world.onLight else Color.White
+    com.omniroute.app.core.ui.SystemBarIcons(selected == JourneySeason.Spring && !ticketOpen, false)
+    val label = stringResource(selected.labelRes)
+    Box(Modifier.fillMaxSize().background(selected.world.shadow)) {
+        Box(Modifier.matchParentSize().blur(if (ticketOpen) 4.dp else 0.dp)) {
+            PortalScenery(selected, active)
+        }
+        Spacer(Modifier.matchParentSize().background(Brush.verticalGradient(
+            0f to Color.Black.copy(alpha = if (selected == JourneySeason.Spring) .03f else .33f), .23f to Color.Transparent, .43f to Color.Transparent,
+            .72f to selected.world.shadow.copy(alpha = .82f), 1f to selected.world.shadow)))
+        if (ticketOpen) ticket()
+        AnimatedVisibility(!ticketOpen && opening == null, enter = fadeIn(tween(260)), exit = fadeOut(tween(245)) + slideOutVertically(tween(260)) { it / 28 }) {
+            BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+                val viewport = maxHeight
+                Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = viewport)
+                    .padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OmniSeasonLogo(season = selected, diameter = 25.dp, tint = skyInk)
+                        Text("OMNIROUTE", Modifier.weight(1f).padding(start = 8.dp), color = skyInk,
+                            fontSize = 15.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.8.sp)
+                        if (motion) IconButton(onClick = { playing = !playing }) {
+                            val desc = stringResource(if (playing) R.string.auth_pause_seasons else R.string.auth_play_seasons)
+                            Box(Modifier.size(36.dp).background(glass, CircleShape).semantics { contentDescription = desc }, contentAlignment = Alignment.Center) {
+                                Canvas(Modifier.matchParentSize().padding(2.dp)) {
+                                    val line = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx(), cap = StrokeCap.Round)
+                                    drawCircle(Color.White.copy(alpha = .22f), style = line)
+                                    drawArc(light, -90f, 360f * cycle.value, false, style = line)
+                                }
+                                if (playing) Text("Ⅱ", color = light, fontSize = 16.sp)
+                                else Icon(Icons.Filled.PlayArrow, null, tint = light, modifier = Modifier.size(16.dp))
+                            }
+                        }
                     }
-                } else {
-                    Icon(Icons.Filled.PlayArrow, null, tint = CoverIvory, modifier = Modifier.size(19.dp))
+                    Spacer(Modifier.fillMaxWidth().weight(1f).heightIn(min = 32.dp).pointerInput(preview) {
+                        var drag = 0f
+                        detectHorizontalDragGestures(onDragStart = { drag = 0f }, onDragEnd = {
+                            if (kotlin.math.abs(drag) > 35.dp.toPx()) choose(preview.stepBy(if (drag < 0f) 1 else -1))
+                        }) { _, dx -> drag += dx }
+                    })
+                    Column {
+                        Column(Modifier.padding(start = 10.dp, end = 6.dp)) {
+                            AnimatedContent(selected, transitionSpec = { (fadeIn(tween(260, 80)) + slideInVertically { it / 3 }) togetherWith fadeOut(tween(150)) }, label = "chapter") { s ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("0${s.ordinal + 1} / ${s.name.uppercase()}   ·   ${stringResource(s.labelRes)} · ${chapters[s.ordinal]}",
+                                        color = s.world.light, fontFamily = FontFamily.Monospace, fontSize = 11.sp, letterSpacing = 1.sp)
+                                    Spacer(Modifier.padding(start = 8.dp).width(28.dp).height(1.dp).background(s.world.accent))
+                                }
+                            }
+                            Spacer(Modifier.height(9.dp))
+                            Text(stringResource(R.string.auth_hero_title), fontFamily = FolioSerif, color = Color.White, fontSize = 32.sp, lineHeight = 41.sp)
+                            Spacer(Modifier.height(7.dp))
+                            Crossfade(selected, animationSpec = tween(450), label = "poem") { Text(poems[it.ordinal], color = it.world.ink, fontSize = 13.sp) }
+                        }
+                        Spacer(Modifier.height(20.dp))
+                        val shape = RoundedCornerShape(26.dp)
+                        Column(Modifier.fillMaxWidth().clip(shape).background(glass).border(.8.dp, Brush.verticalGradient(
+                            listOf(Color.White.copy(alpha = .36f), Color.White.copy(alpha = .09f))), shape).padding(14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(Modifier.fillMaxWidth().selectableGroup(),horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                JourneySeason.entries.forEach { s ->
+                                    val chosen = s == selected
+                                    val tile = RoundedCornerShape(14.dp)
+                                    Box(Modifier.weight(1f).height(44.dp).clip(tile).selectable(chosen, role = Role.Tab) { choose(s) }
+                                        .border(if (chosen) 1.6.dp else .6.dp, if (chosen) light else Color.White.copy(alpha = .23f), tile), contentAlignment = Alignment.Center) {
+                                        Image(painterResource(s.portalArt.landscape), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+                                        Spacer(Modifier.matchParentSize().background(Color.Black.copy(alpha = .39f)).border(if (chosen) 1.6.dp else .6.dp,
+                                            if (chosen) light else Color.White.copy(alpha = .22f), tile))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            OmniSeasonLogo(season = s, diameter = 16.dp, tint = Color.White)
+                                            Text(stringResource(s.labelRes), Modifier.padding(start = 4.dp), color = Color.White, fontFamily = FolioSerif, fontSize = 16.sp)
+                                        }
+                                        if (chosen && playing) Canvas(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(2.dp)) {
+                                            drawRect(light, size = Size(size.width * cycle.value,size.height))
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Button(onClick = { opening = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = light, contentColor = selected.world.onLight)) {
+                                Text("开启${label}日旅程  →", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                            TextButton(onClick = { opening = false }) {
+                                Text("已有账号？", color = selected.world.secondary, fontSize = 13.sp)
+                                Text("直接登录", color = light, fontSize = 13.sp, textDecoration = TextDecoration.Underline)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -231,7 +223,7 @@ private fun CoverHeader(
 private data class WeatherParticle(val x: Float, val y: Float, val size: Float, val speed: Int)
 
 @Composable
-private fun CoverWeather(season: JourneySeason) {
+internal fun CoverWeather(season: JourneySeason) {
     val particles = remember(season) {
         val random = Random(17 + season.ordinal)
         List(if (season == JourneySeason.Winter) 31 else 16) {
@@ -245,28 +237,6 @@ private fun CoverWeather(season: JourneySeason) {
         label = "weather-travel",
     )
     Canvas(Modifier.fillMaxSize()) {
-        if (season != JourneySeason.Winter) {
-            // Map the falls' coordinates in the original 512×768 image through ContentScale.Crop.
-            val scale = maxOf(size.width / 512f, size.height / 768f)
-            val origin = Offset((size.width - 512f * scale) / 2f, (size.height - 768f * scale) / 2f)
-            val flowAlpha = if (season == JourneySeason.Summer) .48f else .24f
-            repeat(11) { i ->
-                val phase = (travel * 18f + i * .137f) % 1f
-                val y = 403f + phase * 117f
-                val x = 109f + i * 3.25f + phase * 19f
-                val from = origin + Offset(x * scale, y * scale)
-                val end = from + Offset((3.9f + phase * 3f) * scale, (13f + i % 4 * 4f) * scale)
-                val intensity = sin(phase * PI).toFloat() * flowAlpha
-                drawLine(
-                    Brush.linearGradient(
-                        listOf(Color.Transparent, Color(0xFFDDF3F2).copy(alpha = intensity), Color.Transparent),
-                        start = from, end = end,
-                    ),
-                    from, end, strokeWidth = (0.95f + i % 4 * .42f) * scale, cap = StrokeCap.Round,
-                )
-            }
-        }
-        if (season == JourneySeason.Summer) return@Canvas
         particles.forEachIndexed { i, p ->
             val phase = (p.y + travel * p.speed) % 1f
             val sway = sin((phase * 7f + i) * PI).toFloat()
@@ -290,7 +260,7 @@ private fun CoverWeather(season: JourneySeason) {
                     drawPath(leaf, (if (i % 3 == 0) Color(0xFFC46B39) else Color(0xFFE5AD62)).copy(alpha = alpha))
                 }
                 JourneySeason.Winter -> drawCircle(Color(0xFFF3F7FF).copy(alpha = alpha), radius * .55f, pos)
-                JourneySeason.Summer -> Unit
+                JourneySeason.Summer -> drawCircle(Color(0xFFFFE8A0).copy(alpha = alpha), radius * .53f, Offset(pos.x, size.height - pos.y))
             }
         }
     }

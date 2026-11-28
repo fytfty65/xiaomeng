@@ -1,5 +1,10 @@
 package com.omniroute.app.feature.home
 
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+
+import com.omniroute.app.core.ui.theme.OmniSeasonLogo
+import com.omniroute.app.core.ui.theme.FolioSerif
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -52,7 +57,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omniroute.app.R
 import com.omniroute.app.core.network.dto.UserDto
-import com.omniroute.app.core.ui.components.OmniLogoMark
 import com.omniroute.app.core.ui.theme.JourneySeason
 import com.omniroute.app.core.ui.theme.LocalAppPalette
 
@@ -64,6 +68,7 @@ internal fun TopBrandBar(
     modifier: Modifier = Modifier,
 ) {
     val palette = LocalAppPalette.current
+    val skyInk = if (LocalJourneySeason.current == JourneySeason.Spring) palette.onBrand else palette.ink
     val displayName = user?.displayName?.takeIf { it.isNotBlank() }
         ?: stringResource(if (loading) R.string.home_loading else R.string.home_account_title)
     Row(
@@ -71,12 +76,13 @@ internal fun TopBrandBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        OmniLogoMark(size = 32.dp)
+        OmniSeasonLogo(diameter = 24.dp, tint = skyInk)
         Text(
-            text = "OmniRoute",
-            color = palette.ink,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
+            text = "OMNIROUTE",
+            letterSpacing = 1.8.sp,
+            color = skyInk,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f),
         )
         Surface(
@@ -116,33 +122,14 @@ internal fun TopBrandBar(
 }
 
 @Composable
-internal fun WelcomeHeadline(greeting: String, season: JourneySeason) {
+internal fun WelcomeHeadline(greeting: String) {
     val palette = LocalAppPalette.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(greeting, color = palette.muted, fontSize = 12.sp)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                stringResource(R.string.home_greeting_line),
-                color = palette.ink,
-                fontSize = 23.sp,
-                lineHeight = 29.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        Surface(shape = CircleShape, color = palette.brandTint) {
-            Text(
-                stringResource(R.string.home_current_season, stringResource(season.labelRes)),
-                color = palette.brandDark,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-            )
-        }
+    val skyInk = if (LocalJourneySeason.current == JourneySeason.Spring) palette.onBrand else palette.ink
+    Column(Modifier.padding(horizontal = 6.dp)) {
+        Text(greeting, color = skyInk, fontSize = 12.sp)
+        Spacer(Modifier.height(4.dp))
+        Text(stringResource(R.string.home_greeting_line), color = skyInk,
+            fontFamily = FolioSerif, fontSize = 26.sp, lineHeight = 35.sp)
     }
 }
 

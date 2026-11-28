@@ -251,9 +251,9 @@
     <string name="home_tag_summer">SUMMER · 02</string>
     <string name="home_tag_autumn">AUTUMN · 03</string>
     <string name="home_tag_winter">WINTER · 04</string>
-    <string name="home_season_title_spring">花间漫游</string>
+    <string name="home_season_title_spring">春日漫游</string>
     <string name="home_season_title_summer">山海来信</string>
-    <string name="home_season_title_autumn">拾光远行</string>
+    <string name="home_season_title_autumn">山林晚秋</string>
     <string name="home_season_title_winter">寻雪而行</string>
     <string name="home_season_phrase_spring">循着花开的方向。</string>
     <string name="home_season_phrase_summer">去山海，等一阵风。</string>
@@ -290,9 +290,9 @@
     <string name="home_planner_full">详细规划</string>
     <string name="home_planner_input_error">请输入境内目的地，天数可选（1–30 天）</string>
     <string-array name="home_suggestions_spring">
-        <item>婺源</item>
-        <item>杭州</item>
-        <item>林芝</item>
+        <item>扬州</item>
+        <item>无锡</item>
+        <item>伊犁</item>
     </string-array>
     <string-array name="home_suggestions_summer">
         <item>青岛</item>
@@ -300,14 +300,14 @@
         <item>舟山</item>
     </string-array>
     <string-array name="home_suggestions_autumn">
-        <item>阿尔山</item>
         <item>喀纳斯</item>
-        <item>腾冲</item>
+        <item>九寨沟</item>
+        <item>额济纳</item>
     </string-array>
     <string-array name="home_suggestions_winter">
-        <item>禾木</item>
+        <item>哈尔滨</item>
+        <item>雪乡</item>
         <item>阿勒泰</item>
-        <item>长白山</item>
     </string-array>
     <string name="home_room_title">协作房间</string>
     <string name="home_room_sub">邀请同行人共创</string>

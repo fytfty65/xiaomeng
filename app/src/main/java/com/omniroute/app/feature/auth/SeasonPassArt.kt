@@ -268,7 +268,7 @@ internal fun SeasonSeal(season: JourneySeason, error: Boolean, modifier: Modifie
 }
 
 @Composable
-private fun rememberFoilTilt(enabled: Boolean): State<Float> {
+internal fun rememberFoilTilt(enabled: Boolean): State<Float> {
     val context = LocalContext.current
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     val active = enabled && lifecycle == Lifecycle.State.RESUMED && ValueAnimator.areAnimatorsEnabled()
