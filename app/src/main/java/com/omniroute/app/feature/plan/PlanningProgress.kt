@@ -1,5 +1,8 @@
 package com.omniroute.app.feature.plan
 
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import com.omniroute.app.core.ui.theme.LocalAppPalette
 
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -48,6 +51,8 @@ internal fun RunningContent(
     members: List<RoomMember>,
     connected: Boolean,
 ) {
+    AgentSky(stages.lastOrNull()?.let { it.label + it.detail }.orEmpty())
+    Spacer(Modifier.height(14.dp))
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = PlanCardBg,

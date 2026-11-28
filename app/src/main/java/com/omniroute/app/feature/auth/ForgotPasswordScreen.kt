@@ -1,6 +1,18 @@
 package com.omniroute.app.feature.auth
 
-import androidx.compose.foundation.BorderStroke
+import com.omniroute.app.core.ui.components.FloatingTitle
+
+import com.omniroute.app.core.ui.theme.LocalJourneySeason
+import com.omniroute.app.core.ui.theme.FolioSerif
+import com.omniroute.app.core.ui.theme.OmniSeasonLogo
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -29,9 +40,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -138,17 +146,17 @@ fun ForgotPasswordScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(CreamBg),
+    val season = LocalJourneySeason.current
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize().imePadding(),
     ) {
+        val sky = (maxHeight * .26f).coerceIn(32.dp, 210.dp)
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 18.dp),
+                .padding(horizontal = 16.dp, vertical = 18.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircleIconButton(
@@ -160,189 +168,185 @@ fun ForgotPasswordScreen(
                     tint = Ink,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = stringResource(R.string.auth_forgot_title),
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink,
-                    )
-                    Text(
-                        text = stringResource(R.string.auth_forgot_sub),
-                        fontSize = 12.sp,
-                        color = Muted,
-                    )
+                FloatingTitle(stringResource(R.string.auth_forgot_title))
+            }
+
+            Spacer(Modifier.height(sky))
+            Column(Modifier.fillMaxWidth().spatialIsland().padding(20.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("OMNIROUTE POST", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp, modifier = Modifier.weight(1f))
+                    OmniSeasonLogo(season = season, diameter = 38.dp, tint = season.world.light)
                 }
-            }
+                Text("重拾旅途密钥", fontFamily = FolioSerif, color = Ink, fontSize = 26.sp)
+                Text(stringResource(R.string.auth_forgot_sub), color = Muted, fontSize = 13.sp)
+                Spacer(Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(26.dp))
+                errorText?.let {
+                    InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+                hintText?.let {
+                    InlineBanner(text = it, bg = InfoBg, fg = InfoFg, icon = Icons.Filled.Check)
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
 
-            errorText?.let {
-                InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
-                Spacer(modifier = Modifier.height(14.dp))
-            }
-            hintText?.let {
-                InlineBanner(text = it, bg = InfoBg, fg = InfoFg, icon = Icons.Filled.Check)
-                Spacer(modifier = Modifier.height(14.dp))
-            }
-
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = CardBg,
-                border = BorderStroke(1.dp, CardBorder),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    when (phase) {
-                        1 -> {
-                            OutlinedTextField(
-                                value = username,
-                                onValueChange = {
-                                    username = it
-                                    if (errorText != null) errorText = null
-                                },
-                                label = {
-                                    Text(
-                                        text = stringResource(R.string.auth_forgot_username),
-                                        fontSize = 12.sp,
-                                    )
-                                },
-                                singleLine = true,
-                                enabled = !loading,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-
-                        2 -> {
-                            OutlinedTextField(
-                                value = token,
-                                onValueChange = { token = it },
-                                label = {
-                                    Text(
-                                        text = stringResource(R.string.auth_reset_token),
-                                        fontSize = 12.sp,
-                                    )
-                                },
-                                singleLine = true,
-                                enabled = !loading,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            OutlinedTextField(
-                                value = newPassword,
-                                onValueChange = { newPassword = it },
-                                label = {
-                                    Text(
-                                        text = stringResource(R.string.auth_reset_new_password),
-                                        fontSize = 12.sp,
-                                    )
-                                },
-                                singleLine = true,
-                                enabled = !loading,
-                                visualTransformation = PasswordVisualTransformation(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            OutlinedTextField(
-                                value = confirmPassword,
-                                onValueChange = { confirmPassword = it },
-                                label = {
-                                    Text(
-                                        text = stringResource(R.string.auth_reset_confirm_password),
-                                        fontSize = 12.sp,
-                                    )
-                                },
-                                singleLine = true,
-                                enabled = !loading,
-                                visualTransformation = PasswordVisualTransformation(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-
-                        else -> {
-                            doneMessage?.let {
-                                Text(
-                                    text = it,
-                                    fontSize = 13.5.sp,
-                                    color = Ink,
+                Box(Modifier.fillMaxWidth()) {
+                    Column {
+                        when (phase) {
+                            1 -> {
+                                TextField(
+                                    colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent),
+                                    value = username,
+                                    onValueChange = {
+                                        username = it
+                                        if (errorText != null) errorText = null
+                                    },
+                                    label = {
+                                        Text(
+                                            text = stringResource(R.string.auth_forgot_username),
+                                            fontSize = 12.sp,
+                                        )
+                                    },
+                                    singleLine = true,
+                                    enabled = !loading,
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
+                            }
+
+                            2 -> {
+                                TextField(
+                                    colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent),
+                                    value = token,
+                                    onValueChange = { token = it },
+                                    label = {
+                                        Text(
+                                            text = stringResource(R.string.auth_reset_token),
+                                            fontSize = 12.sp,
+                                        )
+                                    },
+                                    singleLine = true,
+                                    enabled = !loading,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                TextField(
+                                    colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent),
+                                    value = newPassword,
+                                    onValueChange = { newPassword = it },
+                                    label = {
+                                        Text(
+                                            text = stringResource(R.string.auth_reset_new_password),
+                                            fontSize = 12.sp,
+                                        )
+                                    },
+                                    singleLine = true,
+                                    enabled = !loading,
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                TextField(
+                                    colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent),
+                                    value = confirmPassword,
+                                    onValueChange = { confirmPassword = it },
+                                    label = {
+                                        Text(
+                                            text = stringResource(R.string.auth_reset_confirm_password),
+                                            fontSize = 12.sp,
+                                        )
+                                    },
+                                    singleLine = true,
+                                    enabled = !loading,
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+
+                            else -> {
+                                doneMessage?.let {
+                                    Text(
+                                        text = it,
+                                        fontSize = 13.5.sp,
+                                        color = Ink,
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            val action: () -> Unit = if (phase == 2) submitReset else requestToken
-            if (phase != 3) {
-                Button(
-                    onClick = action,
-                    enabled = !loading,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandOrange),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                ) {
-                    if (loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(17.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.White,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text(
-                        text = stringResource(
-                            when {
-                                loading && phase == 2 -> R.string.auth_resetting
-                                loading -> R.string.auth_forgot_sending
-                                phase == 2 -> R.string.auth_reset_action
-                                else -> R.string.auth_forgot_send
-                            },
-                        ),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                }
-            } else {
-                Button(
-                    onClick = onBackToLogin,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandOrange),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.auth_reset_back_login),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                }
-            }
-
-            if (phase == 2) {
-                Spacer(modifier = Modifier.height(14.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.auth_reset_back_login),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = BrandOrange,
+                val action: () -> Unit = if (phase == 2) submitReset else requestToken
+                if (phase != 3) {
+                    Button(
+                        onClick = action,
+                        enabled = !loading,
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandOrange),
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .clickable(role = Role.Button, onClick = onBackToLogin)
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                    )
+                            .fillMaxWidth()
+                            .height(50.dp),
+                    ) {
+                        if (loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(17.dp),
+                                strokeWidth = 2.dp,
+                                color = season.world.onLight,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(
+                            text = stringResource(
+                                when {
+                                    loading && phase == 2 -> R.string.auth_resetting
+                                    loading -> R.string.auth_forgot_sending
+                                    phase == 2 -> R.string.auth_reset_action
+                                    else -> R.string.auth_forgot_send
+                                },
+                            ),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = season.world.onLight,
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = onBackToLogin,
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandOrange),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.auth_reset_back_login),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = season.world.onLight,
+                        )
+                    }
+                }
+
+                if (phase == 2) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.auth_reset_back_login),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = BrandOrange,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable(role = Role.Button, onClick = onBackToLogin)
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                        )
+                    }
                 }
             }
         }

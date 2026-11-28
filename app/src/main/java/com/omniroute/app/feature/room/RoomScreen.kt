@@ -1,5 +1,13 @@
 package com.omniroute.app.feature.room
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+
+import com.omniroute.app.core.ui.components.FloatingTitle
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
@@ -19,7 +27,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.semantics.contentDescription
 import com.omniroute.app.core.ui.theme.EditionSurface
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
 import com.omniroute.app.core.ui.theme.edition
@@ -29,7 +36,6 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
-import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -117,8 +123,7 @@ fun RoomScreen(
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .seasonBackdrop(),
+            .fillMaxSize(),
     ) {
         Column(
             modifier = Modifier
@@ -128,6 +133,7 @@ fun RoomScreen(
             RoomTopBar(
                 connected = state.connected,
                 hasRoom = state.room != null,
+                onLeave = viewModel::leaveRoom,
                 onBack = onBack,
             )
 
@@ -138,7 +144,7 @@ fun RoomScreen(
                     .wheelScroll(roomScrollState)
                     .padding(horizontal = 20.dp),
             ) {
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(52.dp))
 
                 val current = state.room
                 if (current == null) {
@@ -170,7 +176,6 @@ fun RoomScreen(
                                 ),
                             )
                         },
-                        onLeave = { viewModel.leaveRoom() },
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     VariantsSection(
@@ -214,7 +219,7 @@ fun RoomScreen(
 }
 
 @Composable
-private fun RoomTopBar(connected: Boolean, hasRoom: Boolean, onBack: () -> Unit) {
+private fun RoomTopBar(connected: Boolean, hasRoom: Boolean, onLeave: () -> Unit, onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -232,15 +237,11 @@ private fun RoomTopBar(connected: Boolean, hasRoom: Boolean, onBack: () -> Unit)
                 tint = Ink,
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = stringResource(R.string.room_title),
-                fontFamily = FolioSerif, fontSize = 25.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink,
-            )
+            FloatingTitle(stringResource(R.string.room_title))
         }
 
         if (hasRoom) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(shape = RoundedCornerShape(50), color = if (connected) InfoBg else TagBg) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -263,6 +264,18 @@ private fun RoomTopBar(connected: Boolean, hasRoom: Boolean, onBack: () -> Unit)
                     )
                 }
             }
+            var menu by remember { mutableStateOf(false) }
+            Box {
+                androidx.compose.material3.IconButton(onClick = { menu = true }) {
+                    Text("•••", color = Ink, modifier = Modifier.semantics { contentDescription = "房间选项" })
+                }
+                androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.room_leave)) },
+                        onClick = { menu = false; onLeave() })
+                }
+            }
+            }
+
         }
     }
 }
@@ -396,7 +409,6 @@ private fun RoomCodeCard(
     members: List<RoomMember>,
     connected: Boolean,
     onCopy: () -> Unit,
-    onLeave: () -> Unit,
 ) {
     var copied by remember { mutableStateOf(false) }
     val density = LocalDensity.current
@@ -432,7 +444,7 @@ private fun RoomCodeCard(
         color = EditionSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Box(Modifier.background(LocalAppPalette.current.surface)) {
+        Box(Modifier) {
             Canvas(Modifier.matchParentSize()) {
                 val y = perforation
                 drawLine(
@@ -480,17 +492,6 @@ private fun RoomCodeCard(
                     color = Muted,
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
-                Text(
-                    text = stringResource(R.string.room_leave),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Muted,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable(role = Role.Button, onClick = onLeave)
-                        .padding(vertical = 6.dp),
-                )
             }
         }
     }

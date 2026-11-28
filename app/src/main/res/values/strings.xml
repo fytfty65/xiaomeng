@@ -734,7 +734,7 @@
     <string name="auth_forgot_username">注册用户名</string>
     <string name="auth_forgot_send">获取重置方式</string>
     <string name="auth_forgot_sending">正在提交…</string>
-    <string name="auth_forgot_dev_hint">开发环境已直接生成重置令牌，请在下方设置新密码完成重置。</string>
+    <string name="auth_forgot_dev_hint">已取得一次性重置令牌，请设置新的通行密码。</string>
     <string name="auth_forgot_prod_hint">如果该账号存在，重置说明已发送。请按提示操作后返回登录。</string>
     <string name="auth_forgot_failed">提交失败，请稍后重试</string>
     <string name="auth_reset_token">重置令牌</string>

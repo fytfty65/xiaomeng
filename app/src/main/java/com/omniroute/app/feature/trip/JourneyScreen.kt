@@ -1,7 +1,11 @@
 package com.omniroute.app.feature.trip
 
+import com.omniroute.app.core.ui.components.FloatingTitle
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import androidx.compose.material3.Icon
-import com.omniroute.app.core.ui.theme.FolioSerif
 import com.omniroute.app.core.ui.theme.FolioDigits
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
@@ -9,7 +13,6 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.IconButton
 import com.omniroute.app.core.ui.components.CoverBack
 import com.omniroute.app.core.ui.components.CoverStatusShade
-import com.omniroute.app.core.ui.SystemBarIcons
 import com.omniroute.app.core.ui.theme.editionRim
 import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.Canvas
@@ -24,7 +27,6 @@ import com.omniroute.app.core.ui.theme.OmniSeasonLogo
 import com.omniroute.app.core.ui.theme.edition
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.FlowRow
-import com.omniroute.app.core.ui.theme.seasonBackdrop
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -121,16 +123,18 @@ fun JourneyScreen(
         ?: state.nodes.firstOrNull { it.status == "planned" }
     var dayChoice by rememberSaveable(tripId) { mutableStateOf<Int?>(null) }
     val activeDay = dayChoice?.takeIf { it in days } ?: next?.day ?: days.firstOrNull()
+    val dayNodes = state.nodes.filter { it.day == activeDay }
+    var selectedKey by rememberSaveable(tripId, activeDay) { mutableStateOf<String?>(null) }
+    val focused = dayNodes.find { it.key == selectedKey } ?: next?.takeIf { it.day == activeDay } ?: dayNodes.firstOrNull()
     var openNode by rememberSaveable(tripId) { mutableStateOf<String?>(null) }
     var packingOpen by rememberSaveable(tripId) { mutableStateOf(true) }
-    SystemBarIcons(false, !androidx.compose.foundation.isSystemInDarkTheme())
     Box(Modifier.fillMaxSize()) {
 
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .seasonBackdrop()
+
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
                 .wheelScroll(listState),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -140,11 +144,10 @@ fun JourneyScreen(
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
             item(key = "header") {
-                Row(Modifier.fillMaxWidth().background(LocalJourneySeason.current.edition.anchor)
+                Row(Modifier.fillMaxWidth()
                     .statusBarsPadding().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     CoverBack(onBack)
-                    Text(stringResource(R.string.journey_title), modifier = Modifier.weight(1f).padding(start = 9.dp),
-                        fontFamily = FolioSerif, color = Color.White, fontSize = 20.sp)
+                    Box(Modifier.weight(1f).padding(start = 6.dp)) { FloatingTitle(stringResource(R.string.journey_title), state.destination) }
                     IconButton(onClick = viewModel::refresh) {
                         Icon(Icons.Filled.Refresh, stringResource(R.string.journey_refresh), tint = Color.White)
                     }
@@ -198,17 +201,23 @@ fun JourneyScreen(
                 )
             }
 
-            if (next != null) {
+            if (state.nodes.isNotEmpty()) item(key = "trail") {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+                    ItineraryDayPicker(days, activeDay, { dayChoice = it })
+                    RouteSky(dayNodes, focused?.key, onSelect = { selectedKey = it })
+                }
+            }
+            if (focused != null) {
                 item(key = "focus") {
                     val style = LocalJourneySeason.current.edition
                     val context = LocalContext.current
-                    Column(Modifier.fillMaxWidth().background(style.anchor).padding(start = 22.dp, end = 22.dp, top = 12.dp, bottom = 20.dp),
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp).spatialIsland().padding(start = 22.dp, end = 22.dp, top = 12.dp, bottom = 20.dp),
                         verticalArrangement = Arrangement.spacedBy(15.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                                Text("NEXT STOP   /   第 ${next.day} 天", color = Color.White.copy(alpha = 0.87f),
+                                Text("所选站点   /   第 ${focused.day} 天", color = Color.White.copy(alpha = 0.87f),
                                     fontFamily = FolioDigits, fontSize = 11.sp, letterSpacing = 1.sp)
-                                Text(next.name, color = Color.White, fontFamily = style.titleFont, fontWeight = FontWeight.Bold,
+                                Text(focused.name, color = Color.White, fontFamily = style.titleFont, fontWeight = FontWeight.Bold,
                                     fontSize = 27.sp, lineHeight = 34.sp)
                                 Text("%02d / %02d".format(state.completed, state.total) + "   COMPLETED",
                                     color = Color.White, fontFamily = FolioDigits, fontSize = 21.sp, letterSpacing = 1.sp)
@@ -221,14 +230,14 @@ fun JourneyScreen(
                             }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                            Surface(onClick = { viewModel.updateStatus(next, "visited") }, enabled = state.updatingNodeKey == null,
-                                modifier = Modifier.weight(1f), shape = RoundedCornerShape(5.dp), color = style.deep) {
+                            Surface(onClick = { viewModel.updateStatus(focused, "visited") }, enabled = focused.status !in listOf("visited", "skipped") && state.updatingNodeKey == null,
+                                modifier = Modifier.weight(1f), shape = RoundedCornerShape(50), color = palette.brand) {
                                 Box(Modifier.heightIn(min = 44.dp), contentAlignment = Alignment.Center) {
-                                    Text("到达并打卡", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Text(if (focused.status == "visited") "已打卡" else "到达并打卡", color = palette.onBrand, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                             Surface(onClick = {
-                                val query = listOf(state.destination, next.name).filter { it.isNotBlank() }.distinct().joinToString(" ")
+                                val query = listOf(state.destination, focused.name).filter { it.isNotBlank() }.distinct().joinToString(" ")
                                 if (!searchMap(context, query)) Toast.makeText(context, R.string.trip_navigate_error, Toast.LENGTH_SHORT).show()
                             }, modifier = Modifier.width(50.dp), shape = RoundedCornerShape(5.dp), color = Color.White.copy(alpha = 0.12f)) {
                                 Box(Modifier.heightIn(min = 44.dp), contentAlignment = Alignment.Center) { Icon(Icons.Filled.LocationOn, "导航", tint = Color.White) }
@@ -334,13 +343,6 @@ fun JourneyScreen(
                     )
                 }
             } else {
-                stickyHeader(key = "journey_day_picker") {
-                    Box(Modifier.fillMaxWidth().background(palette.background)
-                        .then(if (listState.firstVisibleItemIndex > 1) Modifier.statusBarsPadding() else Modifier)
-                        .padding(horizontal = 20.dp, vertical = 6.dp)) {
-                        ItineraryDayPicker(days, activeDay, { dayChoice = it })
-                    }
-                }
                 state.nodes.filter { it.day == activeDay }.groupBy { it.day }.forEach { (day, nodes) ->
                     journalItem(key = "day_$day") {
                         Text(

@@ -1,25 +1,29 @@
 package com.omniroute.app.feature.gallery
 
+import com.omniroute.app.core.ui.components.FloatingTitle
+
+import androidx.compose.ui.draw.rotate
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+import com.omniroute.app.core.ui.theme.SeasonWorldImage
+
 import com.omniroute.app.core.ui.theme.FolioSerif
 import com.omniroute.app.core.ui.theme.FolioDigits
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import com.omniroute.app.core.ui.SystemBarIcons
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontFamily
-import com.omniroute.app.core.ui.components.SeasonArtwork
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
 import com.omniroute.app.core.ui.theme.edition
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
-import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -182,7 +186,7 @@ private fun GalleryContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .seasonBackdrop()
+
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         Row(
@@ -198,21 +202,8 @@ private fun GalleryContent(
                 tint = palette.ink,
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.gallery_title),
-                    fontFamily = FolioSerif, fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = palette.ink,
-                )
-                Text(
-                    text = "${LocalJourneySeason.current.name.uppercase()}   ROLL   /   ${"%02d".format(state.photos.size)} FRAMES",
-                    fontFamily = FolioDigits, letterSpacing = 1.3.sp,
-                    fontSize = 12.sp,
-                    color = palette.muted,
-                )
-            }
-            if (state.enabled && state.photos.isNotEmpty()) {
+            Box(Modifier.weight(1f)) { FloatingTitle(stringResource(R.string.gallery_title), listOf("CHERRY 400", "AZURE 200", "AMBER 400", "FROST 800")[LocalJourneySeason.current.ordinal] + "  /  %02d FRAMES".format(state.photos.size)) }
+            if (state.enabled) {
                 AddButton(onClick = onPick)
             }
         }
@@ -276,32 +267,22 @@ private fun GalleryContent(
 @Composable
 private fun GalleryEmpty(enabled: Boolean, onPick: () -> Unit) {
     val palette = LocalAppPalette.current
-    val style = LocalJourneySeason.current.edition
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        repeat(3) { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                repeat(2) { col ->
-                    val index = row * 2 + col
-                    val border = palette.ink.copy(alpha = 0.24f)
-                    Box(Modifier.weight(1f).aspectRatio(0.98f).drawBehind {
-                        drawRect(border, style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))))
-                    }.then(if (index == 0 && enabled) Modifier.clickable(role = Role.Button, onClick = onPick) else Modifier)) {
-                        if (index == 0) {
-                            SeasonArtwork(Modifier.matchParentSize(), cover = true)
-                            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xB8151A1D)))))
-                            Text(if (enabled) "＋ 上传第一张实拍" else "第一帧旅途光影", color = Color.White, fontFamily = FolioSerif,
-                                fontSize = 17.sp, modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
-                        } else if (index == 1) {
-                            Text("把一路见到的风景，\n留在这里。", color = palette.muted, fontFamily = FolioSerif,
-                                fontSize = 16.sp, lineHeight = 26.sp, modifier = Modifier.align(Alignment.Center).padding(12.dp))
-                        }
-                        Text("%02d".format(index + 1), fontFamily = FolioDigits, fontSize = 15.sp,
-                            color = if (index == 0) Color.White else palette.muted,
-                            modifier = Modifier.align(Alignment.TopStart).padding(10.dp))
-                    }
-                }
+    val season = LocalJourneySeason.current
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp).widthIn(max = 268.dp)
+            .rotate(-1.2f).spatialIsland(20.dp).padding(13.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.fillMaxWidth().aspectRatio(1.15f).clip(RoundedCornerShape(12.dp))) {
+                SeasonWorldImage(season, Modifier.matchParentSize())
+                Text("35 MM", Modifier.align(Alignment.TopEnd).padding(10.dp).background(Color.Black.copy(alpha = .46f),
+                    RoundedCornerShape(8.dp)).padding(horizontal = 6.dp, vertical = 3.dp),
+                    color = Color.White, fontFamily = FolioDigits, letterSpacing = 1.sp, fontSize = 11.sp)
             }
+            Text("把一路见到的风景，留在这里", Modifier.padding(top = 18.dp),
+                fontFamily = FolioSerif, color = palette.ink, fontSize = 18.sp)
+            if (enabled) androidx.compose.material3.TextButton(onClick = onPick) {
+                Text("＋ 上传第一张实拍", color = palette.brand, fontSize = 13.sp)
+            }
+            Spacer(Modifier.height(9.dp))
         }
     }
 }
@@ -313,7 +294,7 @@ private fun PhotoCell(
     onClick: () -> Unit,
 ) {
     val palette = LocalAppPalette.current
-    Column(Modifier.clip(RoundedCornerShape(7.dp)).background(palette.surface).padding(5.dp)) {
+    Column(Modifier.clip(RoundedCornerShape(18.dp)).background(palette.surface).padding(5.dp)) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -419,6 +400,7 @@ private fun PhotoViewer(
     onRequestDelete: (GalleryPhotoUi) -> Unit,
 ) {
     SystemBarIcons(darkIcons = false)
+    var stamped by rememberSaveable(photo.id) { mutableStateOf(false) }
     val palette = LocalAppPalette.current
     Box(
         modifier = Modifier
@@ -446,6 +428,14 @@ private fun PhotoViewer(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize(),
             )
+            if (stamped) {
+                Row(Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(18.dp)
+                    .spatialIsland(18.dp).padding(9.dp), verticalAlignment = Alignment.CenterVertically) {
+                    com.omniroute.app.core.ui.theme.OmniSeasonLogo(diameter = 26.dp, tint = palette.brand)
+                    Text(LocalJourneySeason.current.name.uppercase(), fontFamily = FolioDigits,
+                        color = palette.ink, fontSize = 12.sp, letterSpacing = 1.sp)
+                }
+            }
         } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Color.White)
@@ -482,6 +472,9 @@ private fun PhotoViewer(
                     fontSize = 11.sp,
                     color = Color(0xB3FFFFFF),
                 )
+            }
+            TextButton(onClick = { stamped = !stamped }, enabled = bitmap != null) {
+                Text(if (stamped) "收起季节章" else "季节印章", color = palette.brand)
             }
             Text(
                 text = stringResource(R.string.gallery_delete),

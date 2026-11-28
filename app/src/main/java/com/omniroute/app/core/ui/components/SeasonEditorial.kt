@@ -1,5 +1,11 @@
 package com.omniroute.app.core.ui.components
 
+import androidx.compose.ui.draw.clip
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+import com.omniroute.app.core.ui.theme.SeasonWorldImage
+
 import com.omniroute.app.core.ui.theme.FolioSerif
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.aspectRatio
@@ -68,13 +74,15 @@ internal fun SeasonGallery(
     Row(modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         JourneySeason.entries.forEach { season ->
             val active = season == selected
-            val edge = if (active) palette.brand else palette.divider
-            Column(Modifier.weight(1f).border(if (active) 1.5.dp else 0.7.dp, edge)
-                .background(palette.surface).selectable(active, role = Role.RadioButton) { onSelect(season) }.padding(3.dp),
-                horizontalAlignment = Alignment.CenterHorizontally) {
-                SeasonArtwork(Modifier.fillMaxWidth().aspectRatio(0.80f), season = season, cover = true)
-                Text(stringResource(season.labelRes), modifier = Modifier.padding(vertical = 3.dp),
-                    color = if (active) palette.brand else palette.ink, fontFamily = FolioSerif, fontSize = 15.sp)
+            val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+            Box(Modifier.weight(1f).aspectRatio(.72f).clip(shape)
+                .selectable(active, role = Role.RadioButton) { onSelect(season) }) {
+                SeasonWorldImage(season, Modifier.matchParentSize())
+                Spacer(Modifier.matchParentSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(
+                    listOf(androidx.compose.ui.graphics.Color.Transparent, season.world.shadow.copy(alpha = .78f)))))
+                Text(stringResource(season.labelRes), modifier = Modifier.align(Alignment.BottomStart).padding(9.dp),
+                    color = androidx.compose.ui.graphics.Color.White, fontFamily = FolioSerif, fontSize = 19.sp)
+                if (active) Spacer(Modifier.matchParentSize().border(2.dp, season.world.light, shape))
             }
         }
     }

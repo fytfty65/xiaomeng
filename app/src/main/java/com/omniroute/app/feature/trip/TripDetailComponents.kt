@@ -1,5 +1,8 @@
 package com.omniroute.app.feature.trip
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 import com.omniroute.app.core.ui.theme.FolioSerif
 import com.omniroute.app.core.ui.theme.FolioDigits
 import androidx.compose.foundation.layout.*
@@ -105,7 +108,16 @@ internal fun TripDetailHeader(
     onOpenBudget: () -> Unit,
 ) {
     // 1. 路书主看板卡片
-    SummaryNote(trip, summary)
+    if (!summary.isNullOrBlank()) {
+        var expanded by rememberSaveable(trip.id) { mutableStateOf(false) }
+        Column(Modifier.fillMaxWidth().clickable(role = Role.Button) { expanded = !expanded },
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.width(36.dp).height(4.dp).background(Muted.copy(alpha = .55f), RoundedCornerShape(50)))
+            Text(if (expanded) "收起行程摘要" else "展开行程摘要", fontSize = 12.sp,
+                color = Muted, modifier = Modifier.padding(vertical = 8.dp))
+        }
+        if (expanded) Text(summary, color = Ink, lineHeight = 21.sp, fontSize = 14.sp)
+    }
 
     // 2. 空日程校验与提示
     if (!hasContent) {
@@ -255,26 +267,6 @@ internal fun GuideCover(trip: TripPlanDto, toolbar: @Composable () -> Unit) {
             Text(meta.joinToString("   ·   "), color = Color.White, fontFamily = FolioDigits, fontSize = 14.sp, letterSpacing = 0.8.sp)
         }
         toolbar()
-    }
-}
-
-@Composable
-private fun SummaryNote(trip: TripPlanDto, summary: String?) {
-    var showSummary by rememberSaveable(trip.id) { mutableStateOf(false) }
-    if (!summary.isNullOrBlank()) {
-        Spacer(Modifier.height(10.dp))
-        val note = RoundedCornerShape(0.dp)
-        Surface(onClick = { showSummary = !showSummary }, modifier = Modifier.fillMaxWidth(),
-            shape = note, color = Color.Transparent) {
-            Column(Modifier.padding(vertical = 4.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("路书导语", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                    Text(if (showSummary) "收起  −" else "展开  +", color = BrandOrange, fontSize = 12.sp)
-                }
-                Text(summary, color = Muted, lineHeight = 19.sp, fontSize = 12.sp,
-                    maxLines = if (showSummary) Int.MAX_VALUE else 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
     }
 }
 

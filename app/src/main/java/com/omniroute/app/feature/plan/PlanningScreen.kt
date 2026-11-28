@@ -1,7 +1,7 @@
 package com.omniroute.app.feature.plan
 
-import com.omniroute.app.core.ui.theme.FolioSerif
-import com.omniroute.app.core.ui.theme.seasonBackdrop
+import com.omniroute.app.core.ui.components.FloatingTitle
+
 
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
@@ -182,8 +182,7 @@ fun PlanningScreen(
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .seasonBackdrop(),
+            .fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
     ) {
         // 平板/扩展屏上限制正文宽度；结果页内部再按 Window Size Class 切换双栏。
@@ -217,7 +216,7 @@ fun PlanningScreen(
                     .weight(1f)
                     .verticalScroll(formScrollState)
                     .wheelScroll(formScrollState)
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = 14.dp),
             ) {
                 Spacer(modifier = Modifier.height(14.dp))
 
@@ -405,7 +404,7 @@ private fun PlanningTopBar(
                 tint = Ink,
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Text(text = title, fontFamily = FolioSerif, fontSize = 19.sp, color = Ink)
+            FloatingTitle(title)
         }
 
         Surface(shape = RoundedCornerShape(50), color = PlanOrangeLightBg) {

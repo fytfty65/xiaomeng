@@ -1,5 +1,10 @@
 package com.omniroute.app.feature.budget
 
+import com.omniroute.app.core.ui.components.FloatingTitle
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
@@ -26,7 +31,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -156,7 +160,7 @@ fun BudgetScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .seasonBackdrop()
+
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         Row(
@@ -172,20 +176,8 @@ fun BudgetScreen(
                 tint = palette.ink,
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.budget_title),
-                    fontFamily = FolioSerif, fontSize = 25.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = palette.ink,
-                )
-                Text(
-                    text = stringResource(R.string.budget_sub),
-                    fontSize = 12.sp,
-                    color = palette.muted,
-                )
-            }
-            if (state.hasBudget) {
+            Box(Modifier.weight(1f)) { FloatingTitle(stringResource(R.string.budget_title)) }
+            if (!state.loading) {
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
@@ -276,7 +268,7 @@ fun BudgetScreen(
                 }
 
                 item(key = "manual_entry") {
-                    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Column(Modifier.fillMaxWidth().spatialIsland().padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                         Text("分类快记", color = palette.ink, fontSize = 20.sp, fontFamily = FolioSerif)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf("餐饮", "交通", "住宿", "门票").forEachIndexed { i, label ->
@@ -303,8 +295,11 @@ fun BudgetScreen(
                             modifier = Modifier.padding(top = 4.dp),
                         )
                     }
-                    items(state.expenses, key = { it.id }) { expense ->
-                        ExpenseRow(expense = expense)
+                    state.expenses.groupBy { it.createdAt.take(10) }.forEach { (date, expenses) ->
+                        if (date.isNotBlank()) item(key = "date_$date") {
+                            Text(date, color = palette.muted, fontFamily = FolioDigits, fontSize = 14.sp)
+                        }
+                        items(expenses, key = { "expense_${it.id}" }) { expense -> ExpenseRow(expense) }
                     }
                 } else if (state.error == null) {
                     item(key = "expenses_empty") {
@@ -519,7 +514,7 @@ private fun LedgerCard(
     val shape = RoundedCornerShape(13.dp)
     val ratio = state.ratio.coerceIn(0.0, 1.0).toFloat()
     Column(
-        Modifier.fillMaxWidth().heightIn(min = 186.dp).editionRim(shape).clip(shape).inkFoil().padding(18.dp),
+        Modifier.fillMaxWidth().heightIn(min = 186.dp).spatialIsland().padding(19.dp),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

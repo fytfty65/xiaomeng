@@ -1,5 +1,12 @@
 package com.omniroute.app.feature.notify
 
+import com.omniroute.app.core.ui.components.FloatingTitle
+
+import androidx.compose.animation.core.*
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import com.omniroute.app.core.ui.theme.inkFoil
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.geometry.Offset
@@ -9,7 +16,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.omniroute.app.core.ui.theme.editionRim
 import com.omniroute.app.core.ui.theme.EditionSurface
-import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -107,16 +113,17 @@ private fun RiskPushCard(
 ) {
     val ivory = Color(0xFFF2F2E9)
     val signal = Color(0xFF98D6AE)
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).inkFoil().padding(18.dp),
+    Column(Modifier.fillMaxWidth().spatialIsland().padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("目的地巡检", Modifier.weight(1f), color = ivory, fontFamily = FolioSerif, fontSize = 22.sp)
-            Text(stringResource(R.string.notify_push_check), color = ivory, fontSize = 12.sp,
-                modifier = Modifier.clickable(enabled = !busy, role = Role.Button, onClick = onCheck).padding(9.dp))
+            Text("目的地守护哨", Modifier.weight(1f), color = ivory, fontFamily = FolioSerif, fontSize = 22.sp)
             Switch(checked = enabled, enabled = !busy, onCheckedChange = onToggle)
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(15.dp)) {
-            Canvas(Modifier.size(64.dp)) {
+            val sweep = if (enabled) rememberInfiniteTransition(label = "radar").animateFloat(
+                0f, 360f, infiniteRepeatable(tween(5200, easing = LinearEasing)), label = "sweep") else null
+            Canvas(Modifier.size(68.dp)) {
+                sweep?.let { drawArc(signal.copy(alpha = .19f), it.value, 60f, useCenter = true) }
                 val u = size.minDimension / 2f
                 listOf(0.33f, 0.65f, 0.97f).forEach { scale ->
                     drawCircle(signal.copy(alpha = 0.42f), u * scale, style = Stroke(0.8.dp.toPx()))
@@ -133,7 +140,12 @@ private fun RiskPushCard(
                     color = ivory.copy(alpha = 0.76f), fontSize = 12.sp)
             }
         }
-        Text(if (enabled) "后台通知已开启" else "后台通知已关闭", color = ivory.copy(alpha = 0.76f), fontSize = 12.sp)
+        HorizontalDivider(color = signal.copy(alpha = .2f))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(if (enabled) "后台通知已开启" else "后台通知已关闭", Modifier.weight(1f), color = ivory.copy(alpha = .76f), fontSize = 12.sp)
+            Text(stringResource(R.string.notify_push_check), color = ivory, fontSize = 12.sp,
+                modifier = Modifier.clickable(enabled = !busy, role = Role.Button, onClick = onCheck).padding(9.dp))
+        }
         if (cities.isEmpty()) Text("规划一份行程，开启守护  →", color = ivory,
             modifier = Modifier.clickable(role = Role.Button, onClick = onStartPlanning).padding(vertical = 4.dp))
         notice?.let { Text(it, color = ivory, fontSize = 12.sp) }
@@ -183,8 +195,7 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .seasonBackdrop(),
+            .fillMaxSize(),
     ) {
         Column(
             modifier = Modifier
@@ -208,12 +219,7 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
                         tint = Ink,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.notify_title),
-                        fontFamily = FolioSerif, fontSize = 25.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink,
-                    )
+                    FloatingTitle(stringResource(R.string.notify_title))
                 }
                 if (unreadCount > 0) {
                     Surface(shape = RoundedCornerShape(50), color = OrangeLightBg) {
@@ -256,6 +262,19 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
                                 onStartPlanning = onStartPlanning,
                             )
 
+                            Spacer(Modifier.height(12.dp))
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    listOf("气象" to listOf("weather", "气象", "天气"), "交通" to listOf("traffic", "transport", "路况", "交通"),
+                                        "景区" to listOf("scenic", "attraction", "景区")).forEach { (label, keys) ->
+                                        val count = state.items.count { item -> keys.any { item.type.orEmpty().contains(it, ignoreCase = true) } }
+                                        Column(Modifier.weight(1f).spatialIsland(16.dp).padding(12.dp)) {
+                                            Text(label, fontFamily = FolioSerif, fontSize = 17.sp, color = Ink)
+                                            Text(if (state.errorText != null) "—" else if (count == 0) "无提醒" else count.toString(),
+                                                fontFamily = FolioDigits, fontSize = 22.sp, color = Ink)
+                                            Text(if (state.errorText == null) "条通知" else "待同步", fontSize = 11.sp, color = Muted)
+                                        }
+                                    }
+                                }
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Row(
@@ -335,23 +354,10 @@ fun NotificationsScreen(container: AppContainer, onBack: () -> Unit, onStartPlan
                         }
 
                         visible.isEmpty() -> item(key = "notify_empty") {
-                            Column(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                            Column(Modifier.fillMaxWidth().spatialIsland().padding(16.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
                                 Text(if (state.errorText != null) "通知记录待同步" else stringResource(if (state.unreadOnly) R.string.notify_empty_unread else R.string.notify_empty_all),
                                     fontSize = 23.sp, fontFamily = FolioSerif, color = Ink)
-                                Text("各类通知记录", fontSize = 12.sp, color = Muted)
                                 HorizontalDivider(color = CardBorder)
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    listOf("气象" to listOf("weather", "气象", "天气"), "交通" to listOf("traffic", "transport", "路况", "交通"),
-                                        "景区" to listOf("scenic", "attraction", "景区")).forEach { (label, keys) ->
-                                        val count = state.items.count { item -> keys.any { item.type.orEmpty().contains(it, ignoreCase = true) } }
-                                        Column(Modifier.weight(1f)) {
-                                            Text(label, fontFamily = FolioSerif, fontSize = 17.sp, color = Ink)
-                                            Text(if (state.errorText != null) "—" else "%02d".format(count),
-                                                fontFamily = FolioDigits, fontSize = 30.sp, color = Ink)
-                                            Text(if (state.errorText == null) "条通知" else "待同步", fontSize = 11.sp, color = Muted)
-                                        }
-                                    }
-                                }
                                 HorizontalDivider(color = CardBorder)
                                 if (state.pushCities.isNotEmpty()) {
                                     Text("已订阅目的地", color = Ink, fontFamily = FolioSerif, fontSize = 18.sp)

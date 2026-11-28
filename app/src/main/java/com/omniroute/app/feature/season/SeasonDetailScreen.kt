@@ -1,5 +1,8 @@
 package com.omniroute.app.feature.season
 
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import com.omniroute.app.core.ui.theme.FolioSerif
 import com.omniroute.app.core.ui.theme.FolioDigits
 import androidx.compose.foundation.layout.*
@@ -10,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.platform.LocalConfiguration
-import com.omniroute.app.core.ui.components.SeasonArtwork
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -78,14 +80,14 @@ private fun SeasonChapter(
     var copiedIndex by rememberSaveable(season) { mutableStateOf<Int?>(null) }
     SystemBarIcons(false)
     val ivory = Color(0xFFF7F5ED)
-    Box(Modifier.fillMaxSize().background(style.anchor)) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))) {
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
                 Box(Modifier.fillMaxWidth().heightIn(min = (LocalConfiguration.current.screenHeightDp * 0.62f).dp.coerceIn(320.dp, 620.dp))) {
-                    SeasonArtwork(Modifier.matchParentSize(), season = season, cover = true)
+
                     Box(Modifier.matchParentSize().background(Brush.verticalGradient(
                         0f to Color.Black.copy(alpha = 0.18f), 0.32f to Color.Transparent,
-                        0.64f to style.anchor.copy(alpha = 0.24f), 1f to style.anchor)))
+                        0.64f to Color.Transparent, 1f to style.anchor.copy(alpha = .60f))))
                     Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 25.dp, vertical = 14.dp)) {
                         val number = (season.ordinal + 1).toString().padStart(2, '0')
                         Text("${season.name.uppercase()}   /   CHAPTER   $number", fontFamily = FolioDigits,
@@ -94,13 +96,19 @@ private fun SeasonChapter(
                             lineHeight = 58.sp, color = Color.White)
                         Text(stringResource(season.phraseRes), fontFamily = FolioSerif, color = ivory, fontSize = 16.sp)
                     }
-                    Box(Modifier.statusBarsPadding().padding(start = 12.dp)) { CoverBack(onBack) }
+                    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        CoverBack(onBack)
+                        Box(Modifier.spatialIsland(24.dp).padding(7.dp)) {
+                            com.omniroute.app.core.ui.theme.OmniSeasonLogo(season = season, diameter = 24.dp, tint = season.world.light)
+                        }
+                    }
                 }
-                Column(Modifier.padding(start = 25.dp, end = 25.dp, top = 12.dp, bottom = 25.dp),
+                Column(Modifier.padding(horizontal = 14.dp).spatialIsland().padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(stringResource(season.noteRes), color = ivory.copy(alpha = 0.84f), fontSize = 14.sp, lineHeight = 22.sp)
                     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                        listOf(style.paper, style.secondary, style.accent).forEachIndexed { i, ink ->
+                        listOf(season.world.shadow, season.world.accent, season.world.light).forEachIndexed { i, ink ->
                             val hex = "#%06X".format(ink.toArgb() and 0xFFFFFF)
                             Column(Modifier.weight(1f).clickable(role = Role.Button) {
                                 context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText(hex, hex))
@@ -127,7 +135,7 @@ private fun SeasonChapter(
                     }
                 }
                 Spacer(Modifier.weight(1f))
-                Surface(onClick = onStart, shape = RoundedCornerShape(5.dp), color = ivory) {
+                Surface(onClick = onStart, shape = RoundedCornerShape(50), color = season.world.light) {
                     Text(stringResource(R.string.season_page_start), color = style.anchor, fontFamily = FolioSerif, fontSize = 14.sp,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp))
                 }

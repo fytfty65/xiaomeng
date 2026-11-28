@@ -60,8 +60,7 @@ internal fun PlanningFooter(
     onSave: () -> Unit,
 ) {
     Surface(
-        color = EditionSurface,
-        shadowElevation = 2.dp,
+        color = Color.Transparent,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -172,33 +171,16 @@ internal fun ModernFullButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(targetValue = if (isPressed) 0.985f else 1f, label = "btn_scale")
-    val style = LocalJourneySeason.current.edition
-    val scan = rememberInfiniteTransition(label = "planning button sheen")
-    val sheen by scan.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2_900, delayMillis = 2_100, easing = LinearEasing)),
-        label = "planning action highlight",
-    )
-
+    val palette = com.omniroute.app.core.ui.theme.LocalAppPalette.current
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(50.dp),
         color = Color.Transparent,
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
             .scale(scale)
-            .clip(RoundedCornerShape(14.dp))
-            .background(style.actionGradient)
-            .drawBehind {
-                val center = size.width * (sheen * 1.55f - 0.25f)
-                val spread = size.width * 0.24f
-                drawRect(Brush.linearGradient(
-                    listOf(Color.Transparent, Color.White.copy(alpha = 0.07f), Color.Transparent),
-                    start = Offset(center - spread, size.height),
-                    end = Offset(center + spread, 0f),
-                ))
-            }
+            .clip(RoundedCornerShape(50.dp))
+            .background(palette.brand)
             .minimumInteractiveComponentSize().clickable(
                 enabled = !loading,
                 role = Role.Button,
@@ -216,17 +198,17 @@ internal fun ModernFullButton(
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
-                    color = Color.White,
+                    color = palette.onBrand,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = loadingText, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(text = loadingText, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = palette.onBrand)
             } else {
-                Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = palette.onBrand)
                 Spacer(modifier = Modifier.width(6.dp))
                 Icon(
                     imageVector = Icons.Filled.ArrowForward,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = palette.onBrand,
                     modifier = Modifier.size(15.dp),
                 )
             }

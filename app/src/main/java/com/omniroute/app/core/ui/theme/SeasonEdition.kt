@@ -82,56 +82,41 @@ internal val JourneySeason.edition: SeasonEdition get() = editionStyles.getValue
 
 @Composable
 internal fun SeasonEditionTheme(season: JourneySeason, content: @Composable () -> Unit) {
-    val style = season.edition
-    val dark = isSystemInDarkTheme()
-    val base = season.palette(dark)
-    val tintedPaper = if (dark) lerp(base.background, style.deep, 0.15f) else style.paper
-    val surface = if (dark) lerp(base.surface, style.deep, 0.14f) else Color.White
-    val ink = if (dark) base.ink else lerp(Color(0xFF211E20), style.deep, 0.12f)
-    val accent = if (dark) lerp(style.light, Color.White, 0.55f) else style.deep
-    val palette = base.copy(
-        brand = accent,
-        brandDark = accent,
-        brandLight = style.light,
-        ink = ink,
-        muted = if (dark) base.muted else Color(0xFF686573),
-        background = tintedPaper,
-        surface = surface,
-        fieldBg = lerp(tintedPaper, style.accent, if (dark) 0.13f else 0.065f),
-        border = lerp(surface, style.accent, if (dark) 0.28f else 0.16f),
-        divider = lerp(tintedPaper, style.accent, 0.14f),
-        tagBg = lerp(surface, style.accent, 0.10f),
-        brandTint = lerp(tintedPaper, style.accent, if (dark) 0.24f else 0.14f),
+    val world = season.world
+    val tile = androidx.compose.ui.graphics.lerp(world.shadow, Color.White, 0.105f)
+    val palette = DarkAppPalette.copy(
+        brand = world.light, brandDark = world.light, brandLight = world.accent, onBrand = world.onLight,
+        ink = world.ink, muted = world.secondary, background = world.shadow, surface = world.glass,
+        fieldBg = tile, tabTrack = tile, border = world.secondary.copy(alpha = .32f),
+        divider = world.secondary.copy(alpha = .20f), tagBg = tile, brandTint = tile,
     )
+    com.omniroute.app.core.ui.SystemBarIcons(false, false)
     CompositionLocalProvider(LocalJourneySeason provides season, LocalAppPalette provides palette) {
         MaterialTheme(
-            colorScheme = MaterialTheme.colorScheme.copy(
+            colorScheme = androidx.compose.material3.darkColorScheme(
                 primary = palette.brand,
                 onPrimary = palette.onBrand,
                 primaryContainer = palette.brandTint,
                 onPrimaryContainer = palette.ink,
                 background = palette.background,
-                surface = palette.surface,
+                surface = world.glass.copy(alpha = 1f),
                 onSurface = palette.ink,
                 surfaceVariant = palette.fieldBg,
                 onSurfaceVariant = palette.muted,
                 outline = palette.border,
             ),
         ) {
-            Box(Modifier.fillMaxSize().background(palette.background), contentAlignment = Alignment.TopCenter) {
+            SeasonWorldBackdrop(season) {
+              Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                 Box(Modifier.widthIn(max = ContentMaxWidth).fillMaxSize()) { content() }
+              }
             }
         }
     }
 }
 
-internal fun Modifier.seasonBackdrop(): Modifier = composed {
-    val palette = LocalAppPalette.current
-    background(palette.background)
-}
-
 internal val EditionSurface: Color
-    @Composable get() = LocalAppPalette.current.surface.copy(alpha = 0.80f)
+    @Composable get() = LocalAppPalette.current.surface
 
 internal fun Modifier.editionRim(shape: Shape = RoundedCornerShape(12.dp)): Modifier = composed {
     border(0.7.dp, LocalAppPalette.current.ink.copy(alpha = 0.10f), shape)

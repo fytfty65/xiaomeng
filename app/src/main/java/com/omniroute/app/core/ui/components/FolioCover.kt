@@ -1,5 +1,12 @@
 package com.omniroute.app.core.ui.components
 
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.OmniSeasonLogo
+import com.omniroute.app.core.ui.theme.FolioSerif
+import com.omniroute.app.core.ui.theme.FolioDigits
+import androidx.compose.material3.Text
+import androidx.compose.ui.unit.sp
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -29,4 +36,19 @@ internal fun CoverBack(onBack: () -> Unit) {
 internal fun CoverStatusShade() {
     Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars)
         .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.53f), Color.Black.copy(alpha = 0.29f)))))
+}
+
+/** Compact navigation label; an adjacent action retains its own touch target. */
+@Composable
+internal fun FloatingTitle(title: String, subtitle: String? = null) {
+    val palette = com.omniroute.app.core.ui.theme.LocalAppPalette.current
+    Row(Modifier.spatialIsland(24.dp).padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        OmniSeasonLogo(diameter = 20.dp, tint = palette.brand)
+        Column {
+            Text(title, color = palette.ink, fontFamily = FolioSerif, fontSize = 15.sp, lineHeight = 20.sp)
+            subtitle?.let { Text(it, color = palette.muted, fontFamily = FolioDigits,
+                fontSize = 10.sp, lineHeight = 12.sp, letterSpacing = 1.sp) }
+        }
+    }
 }

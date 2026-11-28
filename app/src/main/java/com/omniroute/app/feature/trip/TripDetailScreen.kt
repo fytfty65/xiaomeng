@@ -1,5 +1,8 @@
 package com.omniroute.app.feature.trip
 
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -8,7 +11,6 @@ import com.omniroute.app.core.ui.theme.edition
 import androidx.compose.foundation.layout.*
 import com.omniroute.app.core.ui.components.CoverBack
 import com.omniroute.app.core.ui.components.CoverStatusShade
-import com.omniroute.app.core.ui.SystemBarIcons
 import androidx.compose.material3.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Color
@@ -23,7 +25,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.omniroute.app.core.ui.theme.LocalAppPalette
-import com.omniroute.app.core.ui.theme.seasonBackdrop
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
@@ -112,12 +113,10 @@ fun TripDetailScreen(
     }
 
     val trip = state.trip
-    SystemBarIcons(false, !androidx.compose.foundation.isSystemInDarkTheme())
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .seasonBackdrop(),
+            .fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
     ) {
         // 平板/扩展屏上限制正文宽度，行程卡片不再被拉成长条。
@@ -186,7 +185,7 @@ fun TripDetailScreen(
                 if (trip == null) {
                     item { Box(Modifier.fillMaxWidth().background(LocalJourneySeason.current.edition.anchor)) { toolbar() } }
                     item(key = "detail_state") {
-                        Column(Modifier.padding(horizontal = 20.dp)) {
+                        Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp).spatialIsland().padding(14.dp)) {
                             Spacer(modifier = Modifier.height(10.dp))
                             state.actionError?.let {
                                 InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
@@ -204,7 +203,7 @@ fun TripDetailScreen(
                 } else {
                     item(key = "cover") { GuideCover(trip, toolbar) }
                     item(key = "detail_header") {
-                        Column(Modifier.padding(horizontal = 20.dp)) {
+                        Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp).spatialIsland().padding(14.dp)) {
                             Spacer(modifier = Modifier.height(10.dp))
                             state.actionError?.let {
                                 InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
@@ -226,7 +225,7 @@ fun TripDetailScreen(
                     // 最多 30 天也只在可视范围内组合卡片；dayNumber 作为稳定 key 避免滚动时重建。
                     if (itinerary != null && itinerary.hasContent()) {
                         stickyHeader(key = "day_picker") {
-                            Box(Modifier.fillMaxWidth().background(LocalAppPalette.current.background)
+                            Box(Modifier.fillMaxWidth().background(LocalAppPalette.current.surface)
                                 .then(if (listState.firstVisibleItemIndex >= 2) Modifier.statusBarsPadding() else Modifier)
                                 .padding(horizontal = 20.dp)) {
                                 Column {

@@ -1,10 +1,14 @@
 package com.omniroute.app.feature.plan
 
+import com.omniroute.app.core.ui.theme.LocalAppPalette
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import com.omniroute.app.core.ui.theme.FolioSerif
 import com.omniroute.app.core.ui.theme.FolioDigits
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.omniroute.app.core.ui.theme.editionRim
@@ -127,8 +131,11 @@ private fun ChatIdeaCard(
     Column(Modifier.fillMaxWidth()) {
         Text("下一站，\n你想奔赴哪场风景？", color = Ink, fontSize = 30.sp, lineHeight = 41.sp, fontFamily = FolioSerif)
         Spacer(Modifier.height(12.dp))
+        Text(stringResource(season.phraseRes), color = Ink, fontSize = 13.sp)
+        Spacer(Modifier.height(22.dp))
+        Column(Modifier.fillMaxWidth().spatialIsland().padding(16.dp)) {
         BasicTextField(value = text, onValueChange = { if (it.length <= 200) onTextChange(it) },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 62.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 84.dp),
             textStyle = TextStyle(fontSize = 16.sp, lineHeight = 25.sp, color = Ink),
             cursorBrush = SolidColor(BrandOrange),
             decorationBox = { input ->
@@ -139,11 +146,11 @@ private fun ChatIdeaCard(
                 }
             })
         HorizontalDivider(color = PlanFormDivider)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(13.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             seasonExamples.forEach { example ->
                 Text(example.substringBefore("，"), color = BrandOrange, fontSize = 12.sp,
-                    textDecoration = TextDecoration.Underline,
-                    modifier = Modifier.clickable(role = Role.Button) { onTextChange(example) }.padding(vertical = 9.dp))
+
+                    modifier = Modifier.padding(vertical = 5.dp).background(PlanTagBg, CircleShape).clip(CircleShape).clickable(role = Role.Button) { onTextChange(example) }.padding(horizontal = 9.dp, vertical = 8.dp))
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -152,6 +159,7 @@ private fun ChatIdeaCard(
                 Text(stringResource(if (parsing) R.string.plan_form_chat_parsing else R.string.plan_form_chat_apply) + "  ↗",
                     color = Color.White, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 15.dp, vertical = 8.dp))
             }
+        }
         }
         hint?.let {
             Spacer(modifier = Modifier.height(9.dp))
@@ -198,7 +206,7 @@ internal fun FormContent(
 
     Spacer(modifier = Modifier.height(22.dp))
 
-    Column(Modifier.fillMaxWidth().background(EditionSurface).border(0.8.dp, PlanFormDivider)
+    Column(Modifier.fillMaxWidth().spatialIsland()
         .padding(horizontal = 13.dp, vertical = 10.dp)) {
         Text("行程登机单", color = Ink, fontFamily = FolioSerif, fontSize = 18.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -526,8 +534,8 @@ private fun PreferenceChip(label: String, selected: Boolean, onClick: () -> Unit
         "夜生活" -> Icons.Filled.Star
         else -> Icons.Filled.Info
     }
-    val backdrop = if (selected) style.actionGradient else Brush.linearGradient(listOf(PlanTagBg, PlanTagBg))
-    val ink = if (selected) Color.White else Ink
+    val backdrop = if (selected) LocalAppPalette.current.brand else PlanTagBg
+    val ink = if (selected) LocalAppPalette.current.onBrand else Ink
     Row(
         modifier = Modifier.clip(CircleShape).background(backdrop)
             .minimumInteractiveComponentSize().toggleable(selected, role = Role.Checkbox) { onClick() }
@@ -535,7 +543,7 @@ private fun PreferenceChip(label: String, selected: Boolean, onClick: () -> Unit
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Icon(icon, null, tint = if (selected) Color.White else BrandOrange, modifier = Modifier.size(13.dp))
+        Icon(icon, null, tint = if (selected) LocalAppPalette.current.onBrand else BrandOrange, modifier = Modifier.size(13.dp))
         Text(label, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = ink)
     }
 }

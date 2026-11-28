@@ -1,15 +1,15 @@
 package com.omniroute.app.feature.profile
 
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import androidx.compose.ui.draw.clipToBounds
 import com.omniroute.app.core.ui.theme.FolioSerif
 import com.omniroute.app.core.ui.theme.FolioDigits
 import androidx.compose.foundation.layout.*
 import com.omniroute.app.core.ui.components.CoverBack
 import com.omniroute.app.core.ui.components.CoverStatusShade
-import com.omniroute.app.core.ui.components.DestinationCover
-import com.omniroute.app.core.ui.SystemBarIcons
 import com.omniroute.app.core.ui.theme.inkFoil
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.rotate
 import com.omniroute.app.core.ui.theme.editionRim
 import androidx.compose.material.icons.filled.Info
@@ -18,10 +18,8 @@ import com.omniroute.app.core.ui.theme.EditionSurface
 import com.omniroute.app.core.ui.theme.OmniSeasonLogo
 import com.omniroute.app.core.ui.theme.LocalJourneySeason
 import com.omniroute.app.core.ui.theme.edition
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.heightIn
-import com.omniroute.app.core.ui.theme.seasonBackdrop
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -178,9 +176,8 @@ fun ProfileScreen(
         }
     }
 
-    SystemBarIcons(darkIcons = false, darkNavigationIcons = !androidx.compose.foundation.isSystemInDarkTheme())
     Box(
-        modifier = Modifier.fillMaxSize().seasonBackdrop(),
+        modifier = Modifier.fillMaxSize(),
     ) {
         val scrollState = rememberScrollState()
         Column(
@@ -205,7 +202,7 @@ fun ProfileScreen(
                 },
             )
 
-            Column(Modifier.padding(horizontal = 20.dp)) {
+            Column(Modifier.padding(horizontal = 14.dp)) {
                 state.profileError?.let {
                     Spacer(modifier = Modifier.height(12.dp))
                     InlineBanner(text = it, bg = ErrorBg, fg = ErrorFg, icon = Icons.Filled.Warning)
@@ -221,7 +218,8 @@ fun ProfileScreen(
                     InlineBanner(text = it, bg = AccentOrangeBg, fg = BrandOrange, icon = Icons.Filled.Check)
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(Modifier.height(64.dp))
+                Column(Modifier.fillMaxWidth().spatialIsland().padding(14.dp)) {
                 SectionTitle(text = stringResource(R.string.profile_section_season))
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -232,32 +230,25 @@ fun ProfileScreen(
                 SectionTitle(text = stringResource(R.string.profile_section_content))
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    val latest = state.latestTrip
-                    DestinationCover(latest?.destCity, latest?.content.orEmpty().contains("天池"),
-                        Modifier.weight(1.05f).fillMaxHeight().clip(RoundedCornerShape(7.dp))
-                            .clickable(role = Role.Button, onClick = onOpenTrips)) {
-                        Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCE15201C)))))
-                        Column(Modifier.align(Alignment.BottomStart).padding(13.dp)) {
-                            Text(stringResource(R.string.profile_my_trips), fontFamily = FolioSerif, fontSize = 22.sp, color = Color.White)
-                            latest?.let { Text(listOfNotNull(it.destCity, it.days.takeIf { d -> d > 0 }?.let { d -> "$d 天" })
-                                .joinToString("  ·  "), color = Color.White, fontSize = 12.sp) }
-                        }
-                    }
-                    Column(Modifier.weight(1f)) {
-                        listOf(Triple(R.string.profile_room_title, Icons.Filled.Person, onOpenRoom),
-                            Triple(R.string.profile_gallery, Icons.Filled.Add, onOpenGallery),
-                            Triple(R.string.profile_risk_title, Icons.Filled.Info, onOpenNotifications)).forEach { (label, icon, action) ->
-                            HorizontalDivider(color = SubtleLine)
-                            Row(Modifier.fillMaxWidth().heightIn(min = 53.dp).clickable(role = Role.Button, onClick = action),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Icon(icon, null, tint = Muted, modifier = Modifier.size(16.dp))
-                                Text(stringResource(label), Modifier.weight(1f).padding(start = 8.dp), color = Ink, fontSize = 14.sp)
-                                Text("›", color = Muted)
+                val entries = listOf(
+                    Triple(R.string.profile_my_trips, Icons.Filled.List, onOpenTrips),
+                    Triple(R.string.profile_room_title, Icons.Filled.Person, onOpenRoom),
+                    Triple(R.string.profile_risk_title, Icons.Filled.Info, onOpenNotifications),
+                    Triple(R.string.profile_gallery, Icons.Filled.Add, onOpenGallery),
+                )
+                entries.chunked(2).forEach { pair ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        pair.forEach { (label, icon, action) ->
+                            Row(Modifier.weight(1f).clip(RoundedCornerShape(16.dp))
+                                .background(LocalAppPalette.current.fieldBg).clickable(role = Role.Button, onClick = action)
+                                .heightIn(min = 60.dp).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(icon, null, tint = BrandOrange, modifier = Modifier.size(18.dp))
+                                Text(stringResource(label), Modifier.padding(start = 7.dp), color = Ink, fontSize = 14.sp)
                             }
                         }
-                        HorizontalDivider(color = SubtleLine)
                     }
+                    Spacer(Modifier.height(7.dp))
+                }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 SectionTitle(text = stringResource(R.string.profile_section_account))
@@ -364,12 +355,18 @@ private fun ProfileHero(
 ) {
     val style = LocalJourneySeason.current.edition
     val foil = Color(0xFFE5DCBF)
-    Box(Modifier.fillMaxWidth().inkFoil().clipToBounds()) {
+    Column(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 14.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            CoverBack(onBack)
+            Text("个人中心", Modifier.padding(start = 6.dp).spatialIsland(24.dp).padding(horizontal = 14.dp, vertical = 7.dp),
+                color = Color.White, fontFamily = FolioSerif, fontSize = 15.sp)
+        }
+        Spacer(Modifier.height(24.dp))
+        Box(Modifier.fillMaxWidth().spatialIsland()) {
         OmniSeasonLogo(Modifier.align(Alignment.CenterEnd).offset(x = 24.dp).rotate(-14f), diameter = 154.dp,
             tint = foil.copy(alpha = 0.075f))
-        Column(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 22.dp)) {
+        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 18.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                CoverBack(onBack)
                 Text("OMNIROUTE   /   PASSPORT", fontSize = 12.sp, fontFamily = FolioDigits, color = foil, letterSpacing = 2.sp)
             }
             Text("旅行护照", fontFamily = FolioSerif, fontSize = 35.sp, lineHeight = 46.sp, color = Color.White)
@@ -481,6 +478,8 @@ private fun ProfileHero(
             }
         }
     }
+}
+
 }
 
 @Composable

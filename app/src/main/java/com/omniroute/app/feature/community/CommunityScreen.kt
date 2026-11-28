@@ -1,6 +1,10 @@
 package com.omniroute.app.feature.community
 
-import com.omniroute.app.core.ui.theme.FolioSerif
+import com.omniroute.app.core.ui.components.FloatingTitle
+
+import com.omniroute.app.core.ui.theme.spatialIsland
+import com.omniroute.app.core.ui.theme.world
+
 import com.omniroute.app.core.ui.components.DestinationCover
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.foundation.shape.CircleShape
@@ -9,7 +13,6 @@ import com.omniroute.app.core.ui.theme.LocalJourneySeason
 import com.omniroute.app.core.ui.theme.edition
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.graphics.Brush
-import com.omniroute.app.core.ui.theme.seasonBackdrop
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -147,12 +150,12 @@ private fun Feed(
         state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .seasonBackdrop()
+
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .wheelScroll(listState),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 20.dp,
-            end = 20.dp,
+            start = 14.dp,
+            end = 14.dp,
             top = 14.dp,
             bottom = 30.dp,
         ),
@@ -169,19 +172,7 @@ private fun Feed(
                     tint = palette.ink,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.community_title),
-                        fontFamily = FolioSerif, fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.ink,
-                    )
-                    Text(
-                        text = stringResource(R.string.community_sub),
-                        fontSize = 12.sp,
-                        color = palette.muted,
-                    )
-                }
+                Box(Modifier.weight(1f)) { FloatingTitle(stringResource(R.string.community_title)) }
                 PublishButton(onClick = onPublish)
             }
         }
@@ -282,8 +273,8 @@ private fun PostCard(
     val style = LocalJourneySeason.current.edition
     val preview = remember(post.content) { readPostPreview(post.content) }
     Surface(
-        shape = RoundedCornerShape(3.dp),
-        color = Color.Transparent,
+        shape = RoundedCornerShape(26.dp),
+        color = palette.surface,
         modifier = Modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick),
@@ -308,7 +299,7 @@ private fun PostCard(
                     }
                 }
             }
-            Column(Modifier.padding(horizontal = 2.dp, vertical = 12.dp)) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                 if (post.title.isNotBlank()) {
                     Spacer(modifier = Modifier.height(9.dp))
                     Text(
@@ -412,7 +403,7 @@ private fun PostDetail(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .seasonBackdrop()
+
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         Row(

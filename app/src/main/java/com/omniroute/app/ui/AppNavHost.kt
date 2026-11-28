@@ -189,19 +189,21 @@ fun AppNavHost(
         }
 
         composable(Routes.FORGOT_PASSWORD) {
-            ForgotPasswordScreen(
-                onRequestReset = { username ->
-                    withContext(Dispatchers.IO) {
-                        runCatching { container.authRepository.forgotPassword(username) }
-                    }
-                },
-                onResetPassword = { token, newPassword ->
-                    withContext(Dispatchers.IO) {
-                        runCatching { container.authRepository.resetPassword(token, newPassword) }
-                    }
-                },
-                onBackToLogin = { navController.popBackStack() },
-            )
+            SeasonEditionTheme(season) {
+                ForgotPasswordScreen(
+                    onRequestReset = { username ->
+                        withContext(Dispatchers.IO) {
+                            runCatching { container.authRepository.forgotPassword(username) }
+                        }
+                    },
+                    onResetPassword = { token, newPassword ->
+                        withContext(Dispatchers.IO) {
+                            runCatching { container.authRepository.resetPassword(token, newPassword) }
+                        }
+                    },
+                    onBackToLogin = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Routes.HOME) {

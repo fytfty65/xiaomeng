@@ -355,7 +355,7 @@ internal fun GradientButton(
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(50))
             .background(if (loading) BrandOrangeDark else BrandOrange)
             .clickable(enabled = !loading, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -365,22 +365,22 @@ internal fun GradientButton(
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
-                    color = Color.White,
+                    color = LocalAppPalette.current.onBrand,
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     loadingText ?: stringResource(R.string.common_processing),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
+                    color = LocalAppPalette.current.onBrand,
                 )
             } else {
-                Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = LocalAppPalette.current.onBrand)
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.Filled.ArrowForward,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = LocalAppPalette.current.onBrand,
                     modifier = Modifier.size(18.dp),
                 )
             }
